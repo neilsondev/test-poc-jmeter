@@ -1,0 +1,10 @@
+email,senha,curso_id,modulo_id,aula_id,prova_modulo_id
+professor1@teste.com,Senha@123,1,1,1,1
+professor1@teste.com,Senha@123,2,2,2,2
+professor1@teste.com,Senha@123,3,3,3,3
+professor2@teste.com,Senha@123,4,4,4,4
+professor2@teste.com,Senha@123,5,5,5,5
+professor2@teste.com,Senha@123,6,6,6,6
+professor3@teste.com,Senha@123,7,7,7,7
+professor3@teste.com,Senha@123,8,8,8,8
+professor3@teste.com,Senha@123,9,9,9,9
