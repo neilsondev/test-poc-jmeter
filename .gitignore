@@ -1,0 +1,12 @@
+# JMeter generated outputs
+resultados/
+*.jtl
+*.log
+**/html_report/
+**/html-report/
+**/html_report*/
+
+# Temporary/runtime files
+tmp/
+temp/
+*.tmp
