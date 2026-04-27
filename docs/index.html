@@ -3,541 +3,721 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Relatorio JMeter Paridade</title>
+  <title>Relatório JMeter simple_py</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; color: #172026; background: #f5f7f8; }
-    header { padding: 28px; background: #12343b; color: #fff; }
-    main { padding: 24px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-    .card { background: #fff; border: 1px solid #d7dee2; border-radius: 8px; padding: 16px; }
-    .panel { background: #fff; border: 1px solid #d7dee2; border-radius: 8px; padding: 18px; margin-top: 20px; }
-    .bar { height: 10px; background: #e4eaed; border-radius: 6px; overflow: hidden; }
-    .bar span { display: block; height: 100%; background: #2e7d32; }
-    .bar.danger span { background: #c62828; }
-    .chart-row { display: grid; grid-template-columns: minmax(180px, 280px) 1fr 80px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #eef2f4; }
-    .compact-row { display: grid; grid-template-columns: minmax(240px, 380px) 1fr; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eef2f4; }
-    .bar-line { position: relative; height: 24px; background: #eef2f4; border-radius: 6px; overflow: hidden; margin: 3px 0; }
+    :root {
+      --bg: #f3f6f8;
+      --surface: #ffffff;
+      --surface-alt: #e8eef2;
+      --text: #13222b;
+      --muted: #566771;
+      --line: #d5dde3;
+      --hero: linear-gradient(135deg, #0f2d3a 0%, #18465b 48%, #0d766e 100%);
+      --spring: #1d4ed8;
+      --python: #15803d;
+      --other: #6b7280;
+      --ok: #166534;
+      --ok-soft: #dcfce7;
+      --warning: #b45309;
+      --warning-soft: #fef3c7;
+      --critical: #b91c1c;
+      --critical-soft: #fee2e2;
+      --shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: radial-gradient(circle at top, #f9fbfc 0, var(--bg) 45%, #edf2f5 100%); color: var(--text); }
+    main { padding: 24px; max-width: 1440px; margin: 0 auto; }
+    .hero { padding: 32px 24px; background: var(--hero); color: #fff; }
+    .eyebrow { margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px; opacity: 0.8; }
+    h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.05; max-width: 900px; }
+    .hero-copy { max-width: 760px; color: rgba(255,255,255,0.84); font-size: 17px; line-height: 1.5; }
+    .hero-grid, .grid, .two-up, .mini-grid, .stat-strip { display: grid; gap: 16px; }
+    .hero-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 24px; }
+    .hero-stat, .card, .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+    .hero-stat { padding: 18px; color: var(--text); }
+    .hero-stat span, .hero-stat small { display: block; color: var(--muted); }
+    .hero-stat strong { display: block; margin: 6px 0; font-size: 28px; color: #0b1720; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
+    .legend span { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 12px; border-radius: 999px; font-size: 13px; }
+    .grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-top: 22px; }
+    .two-up { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin-top: 22px; }
+    .card, .panel { padding: 22px; }
+    .panel { margin-top: 22px; }
+    .panel h2, .card h2 { margin: 0; font-size: 22px; line-height: 1.2; }
+    .panel p, .card p { color: var(--muted); }
+    .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+    .kicker { margin: 0 0 8px; color: #0d766e; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .badge, .stack-pill, .delta-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .badge.ok, .chart-delta.ok { background: var(--ok-soft); color: var(--ok); }
+    .badge.warning, .chart-delta.warning { background: var(--warning-soft); color: var(--warning); }
+    .badge.critical, .chart-delta.critical { background: var(--critical-soft); color: var(--critical); }
+    .stack-pill.spring { background: rgba(29, 78, 216, 0.12); color: var(--spring); }
+    .stack-pill.python { background: rgba(21, 128, 61, 0.12); color: var(--python); }
+    .delta-pill.spring-win { background: rgba(185, 28, 28, 0.12); color: var(--critical); }
+    .delta-pill.python-win { background: rgba(22, 101, 52, 0.12); color: var(--ok); }
+    .stat-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 18px 0 14px; }
+    .stat-strip div, .mini-grid div { background: var(--surface-alt); border-radius: 14px; padding: 12px; }
+    .stat-strip strong, .mini-grid strong { display: block; font-size: 20px; color: #0b1720; }
+    .stat-strip span, .mini-grid span { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .mini-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
+    .meter { height: 12px; background: #dce5ea; border-radius: 999px; overflow: hidden; }
+    .meter span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0891b2, #22c55e); }
+    .footnote { margin: 12px 0 0; font-size: 13px; }
+    .winner-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .winner-summary article { background: var(--surface-alt); border-radius: 16px; padding: 14px; }
+    .winner-summary strong { display: block; font-size: 28px; }
+    .winner-summary span { color: var(--muted); font-size: 13px; }
+    .winner-row, .chart-row, .compact-row { display: grid; gap: 14px; padding: 14px 0; border-bottom: 1px solid #edf2f5; }
+    .winner-row { grid-template-columns: minmax(180px, 1fr) minmax(320px, auto); align-items: center; }
+    .winner-row strong, .chart-label strong { display: block; margin-bottom: 4px; }
+    .winner-row span, .chart-label span { color: var(--muted); font-size: 14px; }
+    .winner-meta { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .chart-row { grid-template-columns: minmax(200px, 260px) 1fr 92px; align-items: center; }
+    .chart-bars { display: grid; gap: 8px; }
+    .bar-line { position: relative; height: 28px; background: #ebf1f4; border-radius: 999px; overflow: hidden; }
     .series { display: block; height: 100%; }
-    .series.spring { background: #1976d2; }
-    .series.python { background: #2e7d32; }
-    .series.latency { background: #6a1b9a; }
-    .series.connect { background: #ef6c00; }
-    .bar-line em { position: absolute; left: 8px; top: 5px; font-style: normal; font-size: 12px; color: #102027; }
-    .delta { font-weight: 700; }
-    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
-    .legend span { border: 1px solid #d7dee2; border-radius: 8px; padding: 8px 10px; background: #fff; color: #102027; }
-    table { border-collapse: collapse; width: 100%; background: #fff; margin-top: 20px; }
-    th, td { border: 1px solid #d7dee2; padding: 8px; text-align: left; font-size: 14px; }
-    th { background: #e9eff2; }
-    @media (max-width: 760px) {
-      .chart-row, .compact-row { grid-template-columns: 1fr; }
+    .series.spring { background: linear-gradient(90deg, #60a5fa, var(--spring)); }
+    .series.python { background: linear-gradient(90deg, #4ade80, var(--python)); }
+    .series.outro { background: linear-gradient(90deg, #cbd5e1, var(--other)); }
+    .bar-line em { position: absolute; inset: 0 auto 0 12px; display: flex; align-items: center; font-style: normal; font-size: 13px; color: #102027; }
+    .chart-delta { justify-self: end; padding: 10px 12px; border-radius: 12px; font-weight: 700; }
+    .insight-list { margin: 16px 0 0; padding-left: 20px; }
+    .insight-list li { margin-bottom: 12px; color: var(--text); line-height: 1.45; }
+    .empty-state { margin: 8px 0 0; padding: 18px; background: var(--surface-alt); border-radius: 14px; }
+    .missing-pairs { margin-top: 14px; color: var(--muted); font-size: 14px; }
+    .explainer p { margin: 0 0 12px; color: var(--text); line-height: 1.55; }
+    .explain-list { margin-top: 14px; }
+    .explain-list p:last-child { margin-bottom: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; background: var(--surface); }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: #e8eef2; position: sticky; top: 0; }
+    .table-wrap { overflow: auto; border-radius: 16px; border: 1px solid var(--line); }
+    @media (max-width: 960px) {
+      .winner-row, .chart-row { grid-template-columns: 1fr; }
+      .winner-meta { justify-content: flex-start; }
+      .chart-delta { justify-self: start; }
+      .mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 680px) {
+      main { padding: 18px; }
+      .hero { padding: 26px 18px; }
+      .stat-strip, .mini-grid, .winner-summary { grid-template-columns: 1fr; }
+      .grid, .two-up { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Relatorio JMeter Paridade</h1>
-    <p>Consolidado automatico dos arquivos .jtl com foco em diferenciar Spring e Python.</p>
-    <div class="legend">
-      <span><strong>Elapsed</strong>: tempo total observado pelo JMeter.</span>
-      <span><strong>Latency</strong>: tempo ate o primeiro byte de resposta.</span>
-      <span><strong>Connect</strong>: tempo gasto para abrir conexao TCP.</span>
-      <span><strong>p95</strong>: 95% das chamadas ficaram abaixo desse tempo.</span>
-    </div>
-  </header>
+  
+    <header class="hero">
+      <div>
+        <p class="eyebrow">JMeter Paridade</p>
+        <h1>Relatório visual da variante simple_py</h1>
+        <p class="hero-copy">A leitura principal prioriza a comparação Spring x Python, destacando diferenças de p95 antes do detalhamento operacional.</p>
+      </div>
+      <div class="hero-grid">
+        <article class="hero-stat">
+          <span>Total de amostras</span>
+          <strong>13458</strong>
+          <small>5 cenários processados</small>
+        </article>
+        <article class="hero-stat">
+          <span>Erro consolidado</span>
+          <strong>0.00%</strong>
+          <small>throughput ponderado 101.73/s</small>
+        </article>
+        <article class="hero-stat">
+          <span>Pior p95</span>
+          <strong>25.3 ms</strong>
+          <small>smoke</small>
+        </article>
+        <article class="hero-stat">
+          <span>Maior volume</span>
+          <strong>9000</strong>
+          <small>load_simple_py</small>
+        </article>
+        <article class="hero-stat">
+          <span>Maior duração</span>
+          <strong>66.89s</strong>
+          <small>load_simple_py</small>
+        </article>
+        <article class="hero-stat">
+          <span>Maior payload médio</span>
+          <strong>22.1 KB</strong>
+          <small>load_simple_py</small>
+        </article>
+      </div>
+    </header>
+    
   <main>
-    <div class="grid">
-            <section class="card">
-              <h2>baseline_escrita</h2>
-              <p><strong>405</strong> samples em 8.67s, 46.72/s</p>
-              <div class="bar"><span style="width:14%"></span></div>
-              <p>Erro: <strong>0.00%</strong></p>
-              <div class="bar danger"><span style="width:0%"></span></div>
-              <p>Elapsed avg 13.2 ms | p95 21.0 ms | p99 203.2 ms | max 238 ms</p>
-              <p>Latency avg 13.0 ms | Connect avg 0.8 ms | bytes 515</p>
-            </section>
+    
+    <div class="legend">
+      <span><strong>p95</strong>: 95% das chamadas ficaram abaixo desse tempo.</span>
+      <span><strong>Delta</strong>: positivo indica Python mais lento; negativo indica Python mais rápido.</span>
+      <span><strong>Latency</strong>: tempo até o primeiro byte.</span>
+      <span><strong>Connect</strong>: custo médio de abertura de conexão.</span>
+    </div>
+    
+    
+    <section class="panel explainer">
+      <h2>Como ler este relatório</h2>
+      <p>Este painel resume tempo, volume e estabilidade das chamadas feitas pelo JMeter. A ideia é mostrar rapidamente onde a API respondeu bem, onde houve lentidão e em quais pontos Spring e Python se comportaram de forma diferente.</p>
+      <div class="explain-list">
+        <p><strong>Total de amostras</strong>: quantidade de requisições medidas naquele cenário ou endpoint.</p>
+        <p><strong>Erro</strong>: percentual de requisições que falharam. Quanto mais perto de 0%, melhor.</p>
+        <p><strong>Throughput</strong>: quantas requisições por segundo o cenário conseguiu sustentar.</p>
+        <p><strong>Avg</strong>: tempo médio de resposta. Dá uma noção geral, mas pode esconder picos.</p>
+        <p><strong>p95</strong>: tempo abaixo do qual ficaram 95% das respostas. É um bom indicador de experiência real.</p>
+        <p><strong>p99</strong>: mostra caudas de lentidão mais raras, úteis para identificar picos.</p>
+        <p><strong>Max</strong>: maior tempo observado. Serve como alerta, mas isoladamente pode ser ruído.</p>
+        <p><strong>Latency</strong>: tempo até começar a receber a resposta.</p>
+        <p><strong>Connect</strong>: custo médio para abrir a conexão com o banco ou serviço HTTP.</p>
+        <p><strong>Payload</strong>: volume médio de dados trafegados na resposta. Payload maior pode aumentar o tempo.</p>
+        <p><strong>Delta</strong>: diferença entre Python e Spring no mesmo endpoint. Valor positivo indica Python mais lento; negativo indica Python mais rápido.</p>
+      </div>
+    </section>
+    
+    <section class="grid">
+      
+            <article class="card scenario-card">
+              <div class="card-head">
+                <div>
+                  <p class="kicker">baseline_escrita</p>
+                  <h2>Criação encadeada de curso, módulo, aula e quiz/avaliação.</h2>
+                </div>
+                <span class="badge ok">erro 0.00%</span>
+              </div>
+              <div class="stat-strip">
+                <div><strong>400</strong><span>amostras</span></div>
+                <div><strong>47.60/s</strong><span>throughput</span></div>
+                <div><strong>8.40s</strong><span>duração</span></div>
+              </div>
+              <div class="meter">
+                <span style="width:4%"></span>
+              </div>
+              <div class="mini-grid">
+                <div><span>avg</span><strong>10.5 ms</strong></div>
+                <div><span>p95</span><strong>18.0 ms</strong></div>
+                <div><span>p99</span><strong>39.0 ms</strong></div>
+                <div><span>max</span><strong>90.0 ms</strong></div>
+                <div><span>latency</span><strong>10.3 ms</strong></div>
+                <div><span>connect</span><strong>0.9 ms</strong></div>
+              </div>
+              <p class="footnote">Payload médio 547 B. A barra representa o volume relativo de amostras dentro da variante.</p>
+            </article>
             
-            <section class="card">
-              <h2>baseline_leitura</h2>
-              <p><strong>2810</strong> samples em 33.76s, 83.24/s</p>
-              <div class="bar"><span style="width:100%"></span></div>
-              <p>Erro: <strong>0.00%</strong></p>
-              <div class="bar danger"><span style="width:0%"></span></div>
-              <p>Elapsed avg 12.8 ms | p95 34.0 ms | p99 205.0 ms | max 248 ms</p>
-              <p>Latency avg 12.7 ms | Connect avg 0.4 ms | bytes 568</p>
-            </section>
+            <article class="card scenario-card">
+              <div class="card-head">
+                <div>
+                  <p class="kicker">baseline_leitura</p>
+                  <h2>Comparação controlada de operações GET equivalentes entre as stacks.</h2>
+                </div>
+                <span class="badge ok">erro 0.00%</span>
+              </div>
+              <div class="stat-strip">
+                <div><strong>2800</strong><span>amostras</span></div>
+                <div><strong>85.88/s</strong><span>throughput</span></div>
+                <div><strong>32.60s</strong><span>duração</span></div>
+              </div>
+              <div class="meter">
+                <span style="width:31%"></span>
+              </div>
+              <div class="mini-grid">
+                <div><span>avg</span><strong>4.0 ms</strong></div>
+                <div><span>p95</span><strong>7.0 ms</strong></div>
+                <div><span>p99</span><strong>11.0 ms</strong></div>
+                <div><span>max</span><strong>92.0 ms</strong></div>
+                <div><span>latency</span><strong>3.9 ms</strong></div>
+                <div><span>connect</span><strong>0.4 ms</strong></div>
+              </div>
+              <p class="footnote">Payload médio 695 B. A barra representa o volume relativo de amostras dentro da variante.</p>
+            </article>
             
-            <section class="card">
-              <h2>full_regressao</h2>
-              <p><strong>1265</strong> samples em 24.74s, 51.13/s</p>
-              <div class="bar"><span style="width:45%"></span></div>
-              <p>Erro: <strong>0.00%</strong></p>
-              <div class="bar danger"><span style="width:0%"></span></div>
-              <p>Elapsed avg 15.4 ms | p95 24.0 ms | p99 287.1 ms | max 422 ms</p>
-              <p>Latency avg 15.3 ms | Connect avg 0.5 ms | bytes 4115</p>
-            </section>
+            <article class="card scenario-card">
+              <div class="card-head">
+                <div>
+                  <p class="kicker">full_regressao</p>
+                  <h2>Subconjunto misto para detectar regressão funcional ampla sem custo de execução alto.</h2>
+                </div>
+                <span class="badge ok">erro 0.00%</span>
+              </div>
+              <div class="stat-strip">
+                <div><strong>1250</strong><span>amostras</span></div>
+                <div><strong>51.36/s</strong><span>throughput</span></div>
+                <div><strong>24.34s</strong><span>duração</span></div>
+              </div>
+              <div class="meter">
+                <span style="width:13%"></span>
+              </div>
+              <div class="mini-grid">
+                <div><span>avg</span><strong>4.6 ms</strong></div>
+                <div><span>p95</span><strong>8.0 ms</strong></div>
+                <div><span>p99</span><strong>11.5 ms</strong></div>
+                <div><span>max</span><strong>104.0 ms</strong></div>
+                <div><span>latency</span><strong>4.5 ms</strong></div>
+                <div><span>connect</span><strong>0.6 ms</strong></div>
+              </div>
+              <p class="footnote">Payload médio 5.6 KB. A barra representa o volume relativo de amostras dentro da variante.</p>
+            </article>
             
-            <section class="card">
-              <h2>smoke</h2>
-              <p><strong>9</strong> samples em 0.28s, 31.91/s</p>
-              <div class="bar"><span style="width:2%"></span></div>
-              <p>Erro: <strong>0.00%</strong></p>
-              <div class="bar danger"><span style="width:0%"></span></div>
-              <p>Elapsed avg 33.4 ms | p95 147.6 ms | p99 210.3 ms | max 226 ms</p>
-              <p>Latency avg 33.1 ms | Connect avg 4.1 ms | bytes 625</p>
-            </section>
+            <article class="card scenario-card">
+              <div class="card-head">
+                <div>
+                  <p class="kicker">load_simple_py</p>
+                  <h2>Carga mista da PoC Python simple_py com quatro leituras e uma criação por iteração.</h2>
+                </div>
+                <span class="badge ok">erro 0.00%</span>
+              </div>
+              <div class="stat-strip">
+                <div><strong>9000</strong><span>amostras</span></div>
+                <div><strong>134.54/s</strong><span>throughput</span></div>
+                <div><strong>66.89s</strong><span>duração</span></div>
+              </div>
+              <div class="meter">
+                <span style="width:100%"></span>
+              </div>
+              <div class="mini-grid">
+                <div><span>avg</span><strong>6.2 ms</strong></div>
+                <div><span>p95</span><strong>18.0 ms</strong></div>
+                <div><span>p99</span><strong>30.0 ms</strong></div>
+                <div><span>max</span><strong>158.0 ms</strong></div>
+                <div><span>latency</span><strong>6.0 ms</strong></div>
+                <div><span>connect</span><strong>0.3 ms</strong></div>
+              </div>
+              <p class="footnote">Payload médio 22.1 KB. A barra representa o volume relativo de amostras dentro da variante.</p>
+            </article>
+            
+            <article class="card scenario-card">
+              <div class="card-head">
+                <div>
+                  <p class="kicker">smoke</p>
+                  <h2>Validação mínima de disponibilidade, massa e endpoints essenciais.</h2>
+                </div>
+                <span class="badge ok">erro 0.00%</span>
+              </div>
+              <div class="stat-strip">
+                <div><strong>8</strong><span>amostras</span></div>
+                <div><strong>163.27/s</strong><span>throughput</span></div>
+                <div><strong>0.05s</strong><span>duração</span></div>
+              </div>
+              <div class="meter">
+                <span style="width:4%"></span>
+              </div>
+              <div class="mini-grid">
+                <div><span>avg</span><strong>10.2 ms</strong></div>
+                <div><span>p95</span><strong>25.3 ms</strong></div>
+                <div><span>p99</span><strong>25.9 ms</strong></div>
+                <div><span>max</span><strong>26.0 ms</strong></div>
+                <div><span>latency</span><strong>10.1 ms</strong></div>
+                <div><span>connect</span><strong>4.2 ms</strong></div>
+              </div>
+              <p class="footnote">Payload médio 815 B. A barra representa o volume relativo de amostras dentro da variante.</p>
+            </article>
+            
+    </section>
+    <section class="two-up">
+      <section class="panel">
+        <h2>Quem ganhou onde</h2>
+        <p>Ranking dos endpoints comparáveis com maior diferença absoluta de p95.</p>
+        
+    <div class="winner-summary">
+      <article><strong>18</strong><span>vitórias Spring</span></article>
+      <article><strong>6</strong><span>vitórias Python</span></article>
+      <article><strong>24</strong><span>pares comparáveis</span></article>
+    </div>
+    
+            <div class="winner-row">
+              <div>
+                <strong>load_simple_py</strong>
+                <span>course list · leitura</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 17.0 ms</span>
+                <span class="stack-pill python">Python 45.2 ms</span>
+                <span class="delta-pill spring-win">+28.2 ms</span>
+              </div>
             </div>
+            
+            <div class="winner-row">
+              <div>
+                <strong>load_simple_py</strong>
+                <span>create course · escrita</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 6.0 ms</span>
+                <span class="stack-pill python">Python 12.0 ms</span>
+                <span class="delta-pill spring-win">+6.0 ms</span>
+              </div>
+            </div>
+            
+            <div class="winner-row">
+              <div>
+                <strong>smoke</strong>
+                <span>modules · leitura</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 9.0 ms</span>
+                <span class="stack-pill python">Python 4.0 ms</span>
+                <span class="delta-pill python-win">-5.0 ms</span>
+              </div>
+            </div>
+            
+            <div class="winner-row">
+              <div>
+                <strong>full_regressao</strong>
+                <span>assessment · leitura</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 6.0 ms</span>
+                <span class="stack-pill python">Python 10.0 ms</span>
+                <span class="delta-pill spring-win">+4.0 ms</span>
+              </div>
+            </div>
+            
+            <div class="winner-row">
+              <div>
+                <strong>baseline_escrita</strong>
+                <span>create course · escrita</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 7.0 ms</span>
+                <span class="stack-pill python">Python 10.5 ms</span>
+                <span class="delta-pill spring-win">+3.5 ms</span>
+              </div>
+            </div>
+            
+            <div class="winner-row">
+              <div>
+                <strong>baseline_leitura</strong>
+                <span>module list · leitura</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 8.0 ms</span>
+                <span class="stack-pill python">Python 5.0 ms</span>
+                <span class="delta-pill python-win">-3.0 ms</span>
+              </div>
+            </div>
+            
+            <div class="winner-row">
+              <div>
+                <strong>full_regressao</strong>
+                <span>create course · escrita</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 9.4 ms</span>
+                <span class="stack-pill python">Python 12.4 ms</span>
+                <span class="delta-pill spring-win">+3.0 ms</span>
+              </div>
+            </div>
+            
+            <div class="winner-row">
+              <div>
+                <strong>full_regressao</strong>
+                <span>courses · leitura</span>
+              </div>
+              <div class="winner-meta">
+                <span class="stack-pill spring">Spring 5.0 ms</span>
+                <span class="stack-pill python">Python 8.0 ms</span>
+                <span class="delta-pill spring-win">+3.0 ms</span>
+              </div>
+            </div>
+            
+    
+      </section>
+      <section class="panel">
+        <h2>Insights automáticos</h2>
+        <p>Leitura executiva dos sinais mais relevantes antes do detalhamento tabular.</p>
+        <ul class="insight-list"><li>Python ficou 28.2 ms mais lento em <strong>load_simple_py</strong> / course list.</li><li>Python ficou 6.0 ms mais lento em <strong>load_simple_py</strong> / create course.</li><li>Python ficou 4.0 ms mais lento em <strong>full_regressao</strong> / assessment.</li><li>Python venceu por 5.0 ms em <strong>smoke</strong> / modules.</li><li>Python venceu por 3.0 ms em <strong>baseline_leitura</strong> / module list.</li><li>Python venceu por 3.0 ms em <strong>smoke</strong> / lessons.</li><li>Empate técnico em <strong>baseline_escrita</strong> / create module, com delta de +0.5 ms.</li><li>Empate técnico em <strong>baseline_leitura</strong> / course list, com delta de +0.0 ms.</li></ul>
+        <p class="missing-pairs">Cenários sem par comparável: nenhum.</p>
+      </section>
+    </section>
     <section class="panel">
-      <h2>p95 por endpoint equivalente</h2>
-      <p>Compara somente labels que possuem par Spring e Python no mesmo cenario. A coluna final mostra quantas vezes o p95 do Python ficou em relacao ao Spring.</p>
+      <h2>Comparativo visual de p95</h2>
+      <p>Cada linha mostra Spring e Python lado a lado para o mesmo endpoint equivalente. Delta positivo indica Python mais lento.</p>
       
             <div class="chart-row">
-              <div class="chart-label">baseline_escrita<br><strong>create assessment</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:13%"></span><em>Spring 17.1 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:21%"></span><em>Python 27.0 ms</em></div>
+              <div class="chart-label">
+                <strong>load_simple_py</strong>
+                <span>course list</span>
               </div>
-              <div class="delta">1.58x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:37%"></span>
+                  <em>Spring 17.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:100%"></span>
+                  <em>Python 45.2 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta critical">+28.2 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_escrita<br><strong>create course</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:8%"></span><em>Spring 10.6 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:11%"></span><em>Python 14.0 ms</em></div>
+              <div class="chart-label">
+                <strong>load_simple_py</strong>
+                <span>create course</span>
               </div>
-              <div class="delta">1.31x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:13%"></span>
+                  <em>Spring 6.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:26%"></span>
+                  <em>Python 12.0 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">+6.0 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_escrita<br><strong>create lesson</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:8%"></span><em>Spring 10.5 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:12%"></span><em>Python 15.5 ms</em></div>
+              <div class="chart-label">
+                <strong>smoke</strong>
+                <span>modules</span>
               </div>
-              <div class="delta">1.47x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:19%"></span>
+                  <em>Spring 9.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:8%"></span>
+                  <em>Python 4.0 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">-5.0 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_escrita<br><strong>create module</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:8%"></span><em>Spring 10.5 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:11%"></span><em>Python 14.1 ms</em></div>
+              <div class="chart-label">
+                <strong>full_regressao</strong>
+                <span>assessment</span>
               </div>
-              <div class="delta">1.34x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:13%"></span>
+                  <em>Spring 6.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:22%"></span>
+                  <em>Python 10.0 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">+4.0 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_leitura<br><strong>assessment</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:5%"></span><em>Spring 7.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:40%"></span><em>Python 51.0 ms</em></div>
+              <div class="chart-label">
+                <strong>baseline_escrita</strong>
+                <span>create course</span>
               </div>
-              <div class="delta">7.29x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:15%"></span>
+                  <em>Spring 7.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:23%"></span>
+                  <em>Python 10.5 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">+3.5 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_leitura<br><strong>course</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:3%"></span><em>Spring 5.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:52%"></span><em>Python 65.5 ms</em></div>
+              <div class="chart-label">
+                <strong>baseline_leitura</strong>
+                <span>module list</span>
               </div>
-              <div class="delta">13.10x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:17%"></span>
+                  <em>Spring 8.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:11%"></span>
+                  <em>Python 5.0 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">-3.0 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_leitura<br><strong>course list</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:4%"></span><em>Spring 5.1 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:30%"></span><em>Python 38.1 ms</em></div>
+              <div class="chart-label">
+                <strong>full_regressao</strong>
+                <span>create course</span>
               </div>
-              <div class="delta">7.54x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:20%"></span>
+                  <em>Spring 9.4 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:27%"></span>
+                  <em>Python 12.4 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">+3.0 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_leitura<br><strong>lesson</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:3%"></span><em>Spring 5.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:34%"></span><em>Python 43.2 ms</em></div>
+              <div class="chart-label">
+                <strong>full_regressao</strong>
+                <span>courses</span>
               </div>
-              <div class="delta">8.64x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:11%"></span>
+                  <em>Spring 5.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:17%"></span>
+                  <em>Python 8.0 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">+3.0 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_leitura<br><strong>lesson list</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:5%"></span><em>Spring 7.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:42%"></span><em>Python 52.9 ms</em></div>
+              <div class="chart-label">
+                <strong>smoke</strong>
+                <span>lessons</span>
               </div>
-              <div class="delta">7.56x</div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:15%"></span>
+                  <em>Spring 7.0 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:8%"></span>
+                  <em>Python 4.0 ms</em>
+                </div>
+              </div>
+              <div class="chart-delta ok">-3.0 ms</div>
             </div>
             
             <div class="chart-row">
-              <div class="chart-label">baseline_leitura<br><strong>module</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:3%"></span><em>Spring 5.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:34%"></span><em>Python 43.2 ms</em></div>
+              <div class="chart-label">
+                <strong>baseline_escrita</strong>
+                <span>create lesson</span>
               </div>
-              <div class="delta">8.63x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">baseline_leitura<br><strong>module list</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:5%"></span><em>Spring 7.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:38%"></span><em>Python 48.1 ms</em></div>
+              <div class="chart-bars">
+                <div class="bar-line">
+                  <span class="series spring" style="width:25%"></span>
+                  <em>Spring 11.6 ms</em>
+                </div>
+                <div class="bar-line">
+                  <span class="series python" style="width:30%"></span>
+                  <em>Python 14.0 ms</em>
+                </div>
               </div>
-              <div class="delta">6.86x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">full_regressao<br><strong>create course</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:5%"></span><em>Spring 6.8 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:14%"></span><em>Python 17.8 ms</em></div>
-              </div>
-              <div class="delta">2.62x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">full_regressao<br><strong>assessment</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:3%"></span><em>Spring 5.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:100%"></span><em>Python 125.1 ms</em></div>
-              </div>
-              <div class="delta">25.02x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">full_regressao<br><strong>course</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:2%"></span><em>Spring 3.1 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:19%"></span><em>Python 24.1 ms</em></div>
-              </div>
-              <div class="delta">7.90x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">full_regressao<br><strong>courses</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:4%"></span><em>Spring 6.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:19%"></span><em>Python 25.0 ms</em></div>
-              </div>
-              <div class="delta">4.17x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">smoke<br><strong>course get</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:3%"></span><em>Spring 5.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:3%"></span><em>Python 5.0 ms</em></div>
-              </div>
-              <div class="delta">1.00x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">smoke<br><strong>courses</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:23%"></span><em>Spring 30.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:5%"></span><em>Python 7.0 ms</em></div>
-              </div>
-              <div class="delta">0.23x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">smoke<br><strong>lessons</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:5%"></span><em>Spring 7.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:6%"></span><em>Python 8.0 ms</em></div>
-              </div>
-              <div class="delta">1.14x</div>
-            </div>
-            
-            <div class="chart-row">
-              <div class="chart-label">smoke<br><strong>modules</strong></div>
-              <div class="bars">
-                <div class="bar-line"><span class="series spring" style="width:5%"></span><em>Spring 7.0 ms</em></div>
-                <div class="bar-line"><span class="series python" style="width:4%"></span><em>Python 6.0 ms</em></div>
-              </div>
-              <div class="delta">0.86x</div>
+              <div class="chart-delta ok">+2.4 ms</div>
             </div>
             
     </section>
-    <section class="panel">
-      <h2>p95 por stack e operacao</h2>
-      <p>Ajuda a separar leitura, escrita e login. Elapsed e o tempo total; latency mostra quando chegou o primeiro byte; connect aponta custo de abertura de conexao.</p>
-      
+    <section class="two-up">
+      <section class="panel">
+        <h2>Top payloads médios</h2>
+        <p>Payload alto pode explicar parte do custo percebido em elapsed e latency.</p>
+        
             <div class="compact-row">
-              <span>baseline_escrita / Python / escrita</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:5%"></span><em>elapsed p95 22.1 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:5%"></span><em>latency p95 22.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.4 ms</em></div>
+              <span>load_simple_py / Python Load Course List</span>
+              <div class="bar-line">
+                <span class="series python" style="width:100%"></span>
+                <em>110.4 KB em média</em>
               </div>
             </div>
             
             <div class="compact-row">
-              <span>baseline_escrita / Python / login</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:55%"></span><em>elapsed p95 235.2 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:55%"></span><em>latency p95 235.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 5.0 ms</em></div>
+              <span>load_simple_py / Spring Load Course List</span>
+              <div class="bar-line">
+                <span class="series spring" style="width:96%"></span>
+                <em>107.0 KB em média</em>
               </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_escrita / Spring / escrita</span>
-              <div>
-                <div class="bar-line"><span class="series spring" style="width:3%"></span><em>elapsed p95 14.0 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:3%"></span><em>latency p95 14.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 1.0 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_leitura / Python / leitura</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:11%"></span><em>elapsed p95 47.0 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:11%"></span><em>latency p95 47.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.3 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_leitura / Python / login</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:53%"></span><em>elapsed p95 223.6 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:53%"></span><em>latency p95 223.6 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.7 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_leitura / Spring / leitura</span>
-              <div>
-                <div class="bar-line"><span class="series spring" style="width:2%"></span><em>elapsed p95 7.0 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:2%"></span><em>latency p95 7.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.4 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / Python / escrita</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:4%"></span><em>elapsed p95 17.8 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:4%"></span><em>latency p95 17.8 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.5 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / Python / leitura</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:8%"></span><em>elapsed p95 36.0 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:8%"></span><em>latency p95 36.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.4 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / Python / login</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:100%"></span><em>elapsed p95 420.6 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:100%"></span><em>latency p95 420.6 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 2.5 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / Spring / escrita</span>
-              <div>
-                <div class="bar-line"><span class="series spring" style="width:2%"></span><em>elapsed p95 6.8 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:2%"></span><em>latency p95 6.8 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 2.1 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / Spring / leitura</span>
-              <div>
-                <div class="bar-line"><span class="series spring" style="width:2%"></span><em>elapsed p95 5.0 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:2%"></span><em>latency p95 5.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.4 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>smoke / Python / leitura</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:2%"></span><em>elapsed p95 7.8 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:2%"></span><em>latency p95 7.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 0.2 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>smoke / Python / login</span>
-              <div>
-                <div class="bar-line"><span class="series python" style="width:53%"></span><em>elapsed p95 226.0 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:53%"></span><em>latency p95 226.0 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:4%"></span><em>connect avg 17.0 ms</em></div>
-              </div>
-            </div>
-            
-            <div class="compact-row">
-              <span>smoke / Spring / leitura</span>
-              <div>
-                <div class="bar-line"><span class="series spring" style="width:6%"></span><em>elapsed p95 26.6 ms</em></div>
-                <div class="bar-line"><span class="series latency" style="width:6%"></span><em>latency p95 25.7 ms</em></div>
-                <div class="bar-line"><span class="series connect" style="width:2%"></span><em>connect avg 4.8 ms</em></div>
-              </div>
-            </div>
-            
-    </section>
-    <section class="panel">
-      <h2>Volume medio de resposta</h2>
-      <p>Endpoints com payload maior podem parecer mais caros mesmo quando a aplicacao responde rapido. Use este grafico junto com latency e elapsed.</p>
-      
-            <div class="compact-row">
-              <span>full_regressao / GET Spring Courses</span>
-              <div class="bar-line"><span class="series spring" style="width:100%"></span><em>15312 bytes em media</em></div>
             </div>
             
             <div class="compact-row">
               <span>full_regressao / GET Python Courses</span>
-              <div class="bar-line"><span class="series python" style="width:53%"></span><em>8155 bytes em media</em></div>
+              <div class="bar-line">
+                <span class="series python" style="width:15%"></span>
+                <em>17.5 KB em média</em>
+              </div>
+            </div>
+            
+            <div class="compact-row">
+              <span>full_regressao / GET Spring Courses</span>
+              <div class="bar-line">
+                <span class="series spring" style="width:13%"></span>
+                <em>15.3 KB em média</em>
+              </div>
             </div>
             
             <div class="compact-row">
               <span>baseline_leitura / Python Course List</span>
-              <div class="bar-line"><span class="series python" style="width:7%"></span><em>1208 bytes em media</em></div>
+              <div class="bar-line">
+                <span class="series python" style="width:4%"></span>
+                <em>2.8 KB em média</em>
+              </div>
             </div>
             
+      </section>
+      <section class="panel">
+        <h2>Top p95 por label</h2>
+        <p>Ajuda a localizar rapidamente os labels mais caros da variante.</p>
+        
             <div class="compact-row">
-              <span>smoke / GET Python Courses</span>
-              <div class="bar-line"><span class="series python" style="width:7%"></span><em>1208 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_leitura / Spring Course List</span>
-              <div class="bar-line"><span class="series spring" style="width:5%"></span><em>916 bytes em media</em></div>
+              <span>load_simple_py / Python Load Course List</span>
+              <div class="bar-line">
+                <span class="series python" style="width:100%"></span>
+                <em>45.2 ms</em>
+              </div>
             </div>
             
             <div class="compact-row">
               <span>smoke / GET Spring Courses</span>
-              <div class="bar-line"><span class="series spring" style="width:5%"></span><em>916 bytes em media</em></div>
+              <div class="bar-line">
+                <span class="series spring" style="width:57%"></span>
+                <em>26.0 ms</em>
+              </div>
             </div>
             
             <div class="compact-row">
-              <span>baseline_escrita / Python Login</span>
-              <div class="bar-line"><span class="series python" style="width:4%"></span><em>717 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_leitura / Python Login</span>
-              <div class="bar-line"><span class="series python" style="width:4%"></span><em>717 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / Python Login</span>
-              <div class="bar-line"><span class="series python" style="width:4%"></span><em>717 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>smoke / POST Login Python</span>
-              <div class="bar-line"><span class="series python" style="width:4%"></span><em>717 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_escrita / Spring Create Assessment</span>
-              <div class="bar-line"><span class="series spring" style="width:4%"></span><em>677 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_leitura / Python Assessment Get</span>
-              <div class="bar-line"><span class="series python" style="width:4%"></span><em>674 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / GET Python Assessment</span>
-              <div class="bar-line"><span class="series python" style="width:4%"></span><em>674 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>baseline_leitura / Spring Assessment Get</span>
-              <div class="bar-line"><span class="series spring" style="width:4%"></span><em>671 bytes em media</em></div>
-            </div>
-            
-            <div class="compact-row">
-              <span>full_regressao / GET Spring Assessment</span>
-              <div class="bar-line"><span class="series spring" style="width:4%"></span><em>671 bytes em media</em></div>
+              <span>smoke / GET Python Courses</span>
+              <div class="bar-line">
+                <span class="series python" style="width:53%"></span>
+                <em>24.0 ms</em>
+              </div>
             </div>
             
             <div class="compact-row">
               <span>baseline_escrita / Python Create Assessment</span>
-              <div class="bar-line"><span class="series python" style="width:4%"></span><em>651 bytes em media</em></div>
+              <div class="bar-line">
+                <span class="series python" style="width:47%"></span>
+                <em>21.5 ms</em>
+              </div>
             </div>
             
             <div class="compact-row">
-              <span>baseline_escrita / Spring Create Lesson</span>
-              <div class="bar-line"><span class="series spring" style="width:3%"></span><em>580 bytes em media</em></div>
+              <span>baseline_escrita / Spring Create Assessment</span>
+              <div class="bar-line">
+                <span class="series spring" style="width:44%"></span>
+                <em>20.1 ms</em>
+              </div>
             </div>
             
-            <div class="compact-row">
-              <span>baseline_leitura / Spring Lesson List</span>
-              <div class="bar-line"><span class="series spring" style="width:3%"></span><em>556 bytes em media</em></div>
-            </div>
-            
+      </section>
     </section>
     <section class="panel">
       <h2>Detalhe por label</h2>
-    <table>
-      <thead>
-        <tr><th>Cenario</th><th>Label</th><th>Stack</th><th>Operacao</th><th>Total</th><th>Erro</th><th>Avg ms</th><th>p95 ms</th><th>p99 ms</th><th>Max ms</th><th>Latency avg</th><th>Latency p95</th><th>Connect avg</th><th>Bytes avg</th><th>Codigos</th></tr>
-      </thead>
-      <tbody><tr><td>baseline_escrita</td><td>Python Create Assessment</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>20.2</td><td>27.0</td><td>35.5</td><td>36</td><td>20.0</td><td>27.0</td><td>0.4</td><td>651</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_escrita</td><td>Python Create Course</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>8.5</td><td>14.0</td><td>17.5</td><td>18</td><td>8.4</td><td>14.0</td><td>0.6</td><td>491</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_escrita</td><td>Python Create Lesson</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>12.1</td><td>15.5</td><td>19.0</td><td>20</td><td>12.0</td><td>15.0</td><td>0.5</td><td>379</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_escrita</td><td>Python Create Module</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>10.3</td><td>14.1</td><td>16.0</td><td>16</td><td>10.2</td><td>14.1</td><td>0.3</td><td>276</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_escrita</td><td>Python Login</td><td>Python</td><td>login</td><td>5</td><td>0.00%</td><td>220.0</td><td>235.2</td><td>237.4</td><td>238</td><td>219.6</td><td>235.0</td><td>5.0</td><td>717</td><td>{&quot;200&quot;: 5}</td></tr>
-<tr><td>baseline_escrita</td><td>Spring Create Assessment</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>12.4</td><td>17.1</td><td>30.2</td><td>40</td><td>12.3</td><td>16.6</td><td>0.6</td><td>677</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_escrita</td><td>Spring Create Course</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>6.3</td><td>10.6</td><td>26.3</td><td>39</td><td>6.1</td><td>10.6</td><td>1.4</td><td>543</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_escrita</td><td>Spring Create Lesson</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>7.6</td><td>10.5</td><td>18.6</td><td>24</td><td>7.5</td><td>10.5</td><td>1.0</td><td>580</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_escrita</td><td>Spring Create Module</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>7.1</td><td>10.5</td><td>12.5</td><td>13</td><td>6.9</td><td>10.5</td><td>0.9</td><td>505</td><td>{&quot;201&quot;: 50}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Assessment Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>23.7</td><td>51.0</td><td>205.3</td><td>237</td><td>23.6</td><td>51.0</td><td>0.3</td><td>674</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Course Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>21.3</td><td>65.5</td><td>211.0</td><td>242</td><td>21.2</td><td>65.5</td><td>0.3</td><td>529</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Course List</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>16.6</td><td>38.1</td><td>153.9</td><td>242</td><td>16.5</td><td>38.1</td><td>0.3</td><td>1208</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Lesson Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>19.2</td><td>43.2</td><td>202.0</td><td>239</td><td>19.1</td><td>43.2</td><td>0.3</td><td>405</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Lesson List</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>23.4</td><td>52.9</td><td>211.0</td><td>248</td><td>23.3</td><td>52.9</td><td>0.4</td><td>430</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Login</td><td>Python</td><td>login</td><td>10</td><td>0.00%</td><td>216.1</td><td>223.6</td><td>224.7</td><td>225</td><td>216.1</td><td>223.6</td><td>0.7</td><td>717</td><td>{&quot;200&quot;: 10}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Module Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>17.9</td><td>43.2</td><td>180.0</td><td>237</td><td>17.8</td><td>43.1</td><td>0.4</td><td>269</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Python Module List</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>21.9</td><td>48.1</td><td>222.1</td><td>241</td><td>21.8</td><td>48.1</td><td>0.3</td><td>296</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Spring Assessment Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>4.6</td><td>7.0</td><td>9.0</td><td>14</td><td>4.5</td><td>7.0</td><td>0.3</td><td>671</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Spring Course Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>2.9</td><td>5.0</td><td>7.0</td><td>11</td><td>2.7</td><td>4.0</td><td>0.4</td><td>506</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Spring Course List</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.4</td><td>5.1</td><td>8.0</td><td>45</td><td>3.3</td><td>5.0</td><td>0.5</td><td>916</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Spring Lesson Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>2.9</td><td>5.0</td><td>9.0</td><td>12</td><td>2.8</td><td>5.0</td><td>0.3</td><td>554</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Spring Lesson List</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>4.4</td><td>7.0</td><td>10.0</td><td>17</td><td>4.2</td><td>7.0</td><td>0.3</td><td>556</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Spring Module Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.0</td><td>5.0</td><td>7.0</td><td>9</td><td>2.9</td><td>5.0</td><td>0.4</td><td>465</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>baseline_leitura</td><td>Spring Module List</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>4.3</td><td>7.0</td><td>8.0</td><td>9</td><td>4.2</td><td>7.0</td><td>0.4</td><td>467</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>full_regressao</td><td>GET Python Assessment</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>27.8</td><td>125.1</td><td>357.0</td><td>407</td><td>27.7</td><td>125.1</td><td>0.4</td><td>674</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>full_regressao</td><td>GET Python Course</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>19.0</td><td>24.1</td><td>406.0</td><td>406</td><td>18.9</td><td>24.1</td><td>0.4</td><td>529</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>full_regressao</td><td>GET Python Courses</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>17.6</td><td>25.0</td><td>216.4</td><td>405</td><td>17.5</td><td>25.0</td><td>0.5</td><td>8155</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>full_regressao</td><td>GET Spring Assessment</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.5</td><td>5.0</td><td>6.0</td><td>7</td><td>3.4</td><td>5.0</td><td>0.4</td><td>671</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>full_regressao</td><td>GET Spring Course</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>2.4</td><td>3.1</td><td>4.0</td><td>7</td><td>2.3</td><td>3.0</td><td>0.4</td><td>506</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>full_regressao</td><td>GET Spring Courses</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.9</td><td>6.0</td><td>7.0</td><td>14</td><td>3.8</td><td>5.0</td><td>0.4</td><td>15312</td><td>{&quot;200&quot;: 200}</td></tr>
-<tr><td>full_regressao</td><td>Python Create Course</td><td>Python</td><td>escrita</td><td>25</td><td>0.00%</td><td>18.6</td><td>17.8</td><td>178.4</td><td>229</td><td>18.4</td><td>17.8</td><td>0.5</td><td>482</td><td>{&quot;201&quot;: 25}</td></tr>
-<tr><td>full_regressao</td><td>Python Login</td><td>Python</td><td>login</td><td>15</td><td>0.00%</td><td>267.2</td><td>420.6</td><td>421.7</td><td>422</td><td>267.1</td><td>420.6</td><td>2.5</td><td>717</td><td>{&quot;200&quot;: 15}</td></tr>
-<tr><td>full_regressao</td><td>Spring Create Course</td><td>Spring</td><td>escrita</td><td>25</td><td>0.00%</td><td>6.8</td><td>6.8</td><td>39.7</td><td>50</td><td>6.6</td><td>6.8</td><td>2.1</td><td>533</td><td>{&quot;201&quot;: 25}</td></tr>
-<tr><td>smoke</td><td>GET Python Course By Id</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>5.0</td><td>5.0</td><td>5.0</td><td>5</td><td>5.0</td><td>5.0</td><td>0.0</td><td>529</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>GET Python Courses</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>7.0</td><td>7.0</td><td>7.0</td><td>7</td><td>7.0</td><td>7.0</td><td>1.0</td><td>1208</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>GET Python Lessons</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>8.0</td><td>8.0</td><td>8.0</td><td>8</td><td>7.0</td><td>7.0</td><td>0.0</td><td>430</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>GET Python Modules</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>6.0</td><td>6.0</td><td>6.0</td><td>6</td><td>6.0</td><td>6.0</td><td>0.0</td><td>296</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>GET Spring Course By Id</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>5.0</td><td>5.0</td><td>5.0</td><td>5</td><td>4.0</td><td>4.0</td><td>1.0</td><td>506</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>GET Spring Courses</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>30.0</td><td>30.0</td><td>30.0</td><td>30</td><td>29.0</td><td>29.0</td><td>17.0</td><td>916</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>GET Spring Lessons</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>7.0</td><td>7.0</td><td>7.0</td><td>7</td><td>7.0</td><td>7.0</td><td>0.0</td><td>555</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>GET Spring Modules</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>7.0</td><td>7.0</td><td>7.0</td><td>7</td><td>7.0</td><td>7.0</td><td>1.0</td><td>467</td><td>{&quot;200&quot;: 1}</td></tr>
-<tr><td>smoke</td><td>POST Login Python</td><td>Python</td><td>login</td><td>1</td><td>0.00%</td><td>226.0</td><td>226.0</td><td>226.0</td><td>226</td><td>226.0</td><td>226.0</td><td>17.0</td><td>717</td><td>{&quot;200&quot;: 1}</td></tr></tbody>
-    </table>
+      <p>A tabela foi mantida como apoio operacional, com menor prioridade visual que os painéis de comparação e insights.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Cenário</th><th>Label</th><th>Stack</th><th>Operação</th><th>Total</th><th>Erro</th><th>Avg ms</th><th>p95 ms</th><th>p99 ms</th><th>Max ms</th><th>Latency avg</th><th>Connect avg</th><th>Bytes avg</th><th>Códigos</th></tr>
+          </thead>
+          <tbody><tr><td>baseline_escrita</td><td>Python Create Assessment</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>17.9</td><td>21.5</td><td>65.0</td><td>90</td><td>17.8</td><td>0.5</td><td>682</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_escrita</td><td>Python Create Course</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>8.3</td><td>10.5</td><td>25.8</td><td>40</td><td>8.3</td><td>1.3</td><td>460</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_escrita</td><td>Python Create Lesson</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>10.5</td><td>14.0</td><td>15.0</td><td>15</td><td>10.3</td><td>0.7</td><td>502</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_escrita</td><td>Python Create Module</td><td>Python</td><td>escrita</td><td>50</td><td>0.00%</td><td>9.9</td><td>12.0</td><td>13.0</td><td>13</td><td>9.9</td><td>0.6</td><td>424</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_escrita</td><td>Spring Create Assessment</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>14.6</td><td>20.1</td><td>33.7</td><td>44</td><td>14.3</td><td>0.7</td><td>677</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_escrita</td><td>Spring Create Course</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>6.3</td><td>7.0</td><td>24.3</td><td>40</td><td>6.2</td><td>1.5</td><td>542</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_escrita</td><td>Spring Create Lesson</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>8.1</td><td>11.6</td><td>17.0</td><td>19</td><td>7.7</td><td>0.9</td><td>580</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_escrita</td><td>Spring Create Module</td><td>Spring</td><td>escrita</td><td>50</td><td>0.00%</td><td>8.2</td><td>11.5</td><td>16.5</td><td>18</td><td>8.0</td><td>1.0</td><td>505</td><td>{&quot;201&quot;: 50}</td></tr><tr><td>baseline_leitura</td><td>Python Assessment Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>7.9</td><td>11.1</td><td>51.2</td><td>92</td><td>7.8</td><td>0.4</td><td>644</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Python Course Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.6</td><td>6.0</td><td>8.0</td><td>10</td><td>3.5</td><td>0.4</td><td>434</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Python Course List</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.8</td><td>5.0</td><td>8.0</td><td>58</td><td>3.7</td><td>0.4</td><td>2756</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Python Lesson Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.5</td><td>5.1</td><td>7.0</td><td>10</td><td>3.5</td><td>0.3</td><td>488</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Python Lesson List</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.5</td><td>5.1</td><td>8.0</td><td>8</td><td>3.4</td><td>0.4</td><td>490</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Python Module Get</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.7</td><td>5.0</td><td>7.1</td><td>44</td><td>3.6</td><td>0.3</td><td>393</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Python Module List</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.5</td><td>5.0</td><td>7.0</td><td>9</td><td>3.4</td><td>0.3</td><td>395</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Spring Assessment Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>5.0</td><td>9.0</td><td>12.0</td><td>18</td><td>4.8</td><td>0.4</td><td>671</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Spring Course Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.2</td><td>5.1</td><td>12.0</td><td>16</td><td>3.0</td><td>0.4</td><td>506</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Spring Course List</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.6</td><td>5.0</td><td>7.0</td><td>44</td><td>3.4</td><td>0.5</td><td>916</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Spring Lesson Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.2</td><td>5.0</td><td>10.0</td><td>15</td><td>3.0</td><td>0.4</td><td>553</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Spring Lesson List</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>4.6</td><td>7.1</td><td>11.0</td><td>12</td><td>4.5</td><td>0.4</td><td>555</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Spring Module Get</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.0</td><td>5.0</td><td>7.0</td><td>8</td><td>2.9</td><td>0.4</td><td>465</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>baseline_leitura</td><td>Spring Module List</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>4.7</td><td>8.0</td><td>12.0</td><td>20</td><td>4.6</td><td>0.4</td><td>467</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>full_regressao</td><td>GET Python Assessment</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>6.9</td><td>10.0</td><td>14.0</td><td>17</td><td>6.8</td><td>0.5</td><td>644</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>full_regressao</td><td>GET Python Course</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.7</td><td>5.1</td><td>7.0</td><td>9</td><td>3.5</td><td>0.5</td><td>434</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>full_regressao</td><td>GET Python Courses</td><td>Python</td><td>leitura</td><td>200</td><td>0.00%</td><td>5.8</td><td>8.0</td><td>10.0</td><td>104</td><td>5.7</td><td>0.4</td><td>17459</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>full_regressao</td><td>GET Spring Assessment</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.8</td><td>6.0</td><td>11.0</td><td>27</td><td>3.7</td><td>0.5</td><td>671</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>full_regressao</td><td>GET Spring Course</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>2.6</td><td>4.0</td><td>4.0</td><td>8</td><td>2.4</td><td>0.4</td><td>506</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>full_regressao</td><td>GET Spring Courses</td><td>Spring</td><td>leitura</td><td>200</td><td>0.00%</td><td>3.9</td><td>5.0</td><td>7.1</td><td>29</td><td>3.8</td><td>0.5</td><td>15286</td><td>{&quot;200&quot;: 200}</td></tr><tr><td>full_regressao</td><td>Python Create Course</td><td>Python</td><td>escrita</td><td>25</td><td>0.00%</td><td>9.8</td><td>12.4</td><td>44.9</td><td>55</td><td>9.7</td><td>2.4</td><td>450</td><td>{&quot;201&quot;: 25}</td></tr><tr><td>full_regressao</td><td>Spring Create Course</td><td>Spring</td><td>escrita</td><td>25</td><td>0.00%</td><td>7.6</td><td>9.4</td><td>44.2</td><td>55</td><td>7.5</td><td>2.6</td><td>533</td><td>{&quot;201&quot;: 25}</td></tr><tr><td>load_simple_py</td><td>Python Load Course Get</td><td>Python</td><td>leitura</td><td>900</td><td>0.00%</td><td>3.6</td><td>6.0</td><td>11.0</td><td>22</td><td>3.5</td><td>0.3</td><td>435</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Python Load Course List</td><td>Python</td><td>leitura</td><td>900</td><td>0.00%</td><td>20.1</td><td>45.2</td><td>110.0</td><td>158</td><td>19.9</td><td>0.3</td><td>110449</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Python Load Create Course</td><td>Python</td><td>escrita</td><td>900</td><td>0.00%</td><td>7.7</td><td>12.0</td><td>19.0</td><td>100</td><td>7.7</td><td>0.4</td><td>460</td><td>{&quot;201&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Python Load Lesson List</td><td>Python</td><td>leitura</td><td>900</td><td>0.00%</td><td>3.7</td><td>6.0</td><td>11.0</td><td>31</td><td>3.6</td><td>0.3</td><td>491</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Python Load Module List</td><td>Python</td><td>leitura</td><td>900</td><td>0.00%</td><td>3.6</td><td>6.0</td><td>10.0</td><td>27</td><td>3.6</td><td>0.3</td><td>396</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Spring Load Course Get</td><td>Spring</td><td>leitura</td><td>900</td><td>0.00%</td><td>2.4</td><td>4.0</td><td>7.0</td><td>11</td><td>2.3</td><td>0.3</td><td>506</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Spring Load Course List</td><td>Spring</td><td>leitura</td><td>900</td><td>0.00%</td><td>10.0</td><td>17.0</td><td>21.0</td><td>52</td><td>8.2</td><td>0.3</td><td>107005</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Spring Load Create Course</td><td>Spring</td><td>escrita</td><td>900</td><td>0.00%</td><td>4.2</td><td>6.0</td><td>10.0</td><td>32</td><td>4.0</td><td>0.4</td><td>544</td><td>{&quot;201&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Spring Load Lesson List</td><td>Spring</td><td>leitura</td><td>900</td><td>0.00%</td><td>3.4</td><td>6.0</td><td>8.0</td><td>14</td><td>3.3</td><td>0.3</td><td>555</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>load_simple_py</td><td>Spring Load Module List</td><td>Spring</td><td>leitura</td><td>900</td><td>0.00%</td><td>3.5</td><td>6.0</td><td>9.0</td><td>21</td><td>3.4</td><td>0.3</td><td>467</td><td>{&quot;200&quot;: 900}</td></tr><tr><td>smoke</td><td>GET Python Course By Id</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>3.0</td><td>3.0</td><td>3.0</td><td>3</td><td>3.0</td><td>0.0</td><td>434</td><td>{&quot;200&quot;: 1}</td></tr><tr><td>smoke</td><td>GET Python Courses</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>24.0</td><td>24.0</td><td>24.0</td><td>24</td><td>23.0</td><td>16.0</td><td>2756</td><td>{&quot;200&quot;: 1}</td></tr><tr><td>smoke</td><td>GET Python Lessons</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>4.0</td><td>4.0</td><td>4.0</td><td>4</td><td>4.0</td><td>0.0</td><td>490</td><td>{&quot;200&quot;: 1}</td></tr><tr><td>smoke</td><td>GET Python Modules</td><td>Python</td><td>leitura</td><td>1</td><td>0.00%</td><td>4.0</td><td>4.0</td><td>4.0</td><td>4</td><td>4.0</td><td>1.0</td><td>395</td><td>{&quot;200&quot;: 1}</td></tr><tr><td>smoke</td><td>GET Spring Course By Id</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>5.0</td><td>5.0</td><td>5.0</td><td>5</td><td>5.0</td><td>1.0</td><td>506</td><td>{&quot;200&quot;: 1}</td></tr><tr><td>smoke</td><td>GET Spring Courses</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>26.0</td><td>26.0</td><td>26.0</td><td>26</td><td>26.0</td><td>16.0</td><td>916</td><td>{&quot;200&quot;: 1}</td></tr><tr><td>smoke</td><td>GET Spring Lessons</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>7.0</td><td>7.0</td><td>7.0</td><td>7</td><td>7.0</td><td>0.0</td><td>556</td><td>{&quot;200&quot;: 1}</td></tr><tr><td>smoke</td><td>GET Spring Modules</td><td>Spring</td><td>leitura</td><td>1</td><td>0.00%</td><td>9.0</td><td>9.0</td><td>9.0</td><td>9</td><td>9.0</td><td>0.0</td><td>467</td><td>{&quot;200&quot;: 1}</td></tr></tbody>
+        </table>
+      </div>
     </section>
   </main>
 </body>
