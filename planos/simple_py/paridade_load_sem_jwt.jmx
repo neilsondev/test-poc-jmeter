@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Paridade Load Sem JWT">
+      <stringProp name="TestPlan.comments">Carga mista de leitura e escrita para a PoC Python simple_py, sem fluxo de autenticacao e sem IA.</stringProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="SPRING_HOST" elementType="Argument"><stringProp name="Argument.name">SPRING_HOST</stringProp><stringProp name="Argument.value">localhost</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="SPRING_PORT" elementType="Argument"><stringProp name="Argument.name">SPRING_PORT</stringProp><stringProp name="Argument.value">8080</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="PYTHON_HOST" elementType="Argument"><stringProp name="Argument.name">PYTHON_HOST</stringProp><stringProp name="Argument.value">localhost</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="PYTHON_PORT" elementType="Argument"><stringProp name="Argument.name">PYTHON_PORT</stringProp><stringProp name="Argument.value">8000</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="PROTO" elementType="Argument"><stringProp name="Argument.name">PROTO</stringProp><stringProp name="Argument.value">http</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+        </collectionProp>
+      </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="TG_SPRING_LOAD_MIXED">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">${__P(load.loops,30)}</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(load.threads,30)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__P(load.ramp.seconds,60)}</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Defaults Spring Load"><stringProp name="HTTPSampler.domain">${SPRING_HOST}</stringProp><stringProp name="HTTPSampler.port">${SPRING_PORT}</stringProp><stringProp name="HTTPSampler.protocol">${PROTO}</stringProp><stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp><elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="Arguments"><collectionProp name="Arguments.arguments"/></elementProp></ConfigTestElement>
+        <hashTree/>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Spring IDs"><stringProp name="filename">../../data/simple_py/spring_read_ids.csv</stringProp><stringProp name="variableNames">course_id,module_id,lesson_id</stringProp><boolProp name="ignoreFirstLine">true</boolProp><stringProp name="delimiter">,</stringProp><boolProp name="recycle">true</boolProp><boolProp name="stopThread">false</boolProp><stringProp name="shareMode">shareMode.all</stringProp></CSVDataSet>
+        <hashTree/>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Payload Cursos"><stringProp name="filename">../../data/simple_py/payload_cursos.csv</stringProp><stringProp name="variableNames">categoria,descricao,carga_horaria</stringProp><boolProp name="ignoreFirstLine">true</boolProp><stringProp name="delimiter">,</stringProp><boolProp name="recycle">true</boolProp><boolProp name="stopThread">false</boolProp><stringProp name="shareMode">shareMode.all</stringProp></CSVDataSet>
+        <hashTree/>
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Pace Spring Load"><stringProp name="ConstantTimer.delay">${__P(load.delay.ms,50)}</stringProp></ConstantTimer>
+        <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Spring Load Course List"><stringProp name="HTTPSampler.path">/courses</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Spring Load Course Get"><stringProp name="HTTPSampler.path">/courses/${course_id}</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Spring Load Module List"><stringProp name="HTTPSampler.path">/courses/${course_id}/modules</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Spring Load Lesson List"><stringProp name="HTTPSampler.path">/modules/${module_id}/lessons</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Spring Load Create Course"><boolProp name="HTTPSampler.DO_MULTIPART_POST">true</boolProp><stringProp name="HTTPSampler.path">/courses</stringProp><stringProp name="HTTPSampler.method">POST</stringProp><elementProp name="HTTPsampler.Files" elementType="HTTPFileArgs"><collectionProp name="HTTPFileArgs.files"/></elementProp><elementProp name="HTTPsampler.Arguments" elementType="Arguments"><collectionProp name="Arguments.arguments"><elementProp name="dados" elementType="HTTPArgument"><boolProp name="HTTPArgument.always_encode">false</boolProp><stringProp name="Argument.name">dados</stringProp><stringProp name="Argument.value">{&quot;title&quot;:&quot;Curso Load ${__threadNum}-${__counter(FALSE,)}&quot;,&quot;category&quot;:&quot;${categoria}&quot;,&quot;description&quot;:&quot;${descricao}&quot;}</stringProp><stringProp name="Argument.metadata">=</stringProp><boolProp name="HTTPArgument.use_equals">true</boolProp></elementProp></collectionProp></elementProp></HTTPSamplerProxy>
+        <hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 201"><collectionProp name="Asserion.test_strings"><stringProp name="1">201</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="TG_PYTHON_LOAD_MIXED">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">${__P(load.loops,30)}</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(load.threads,30)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__P(load.ramp.seconds,60)}</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Defaults Python Load"><stringProp name="HTTPSampler.domain">${PYTHON_HOST}</stringProp><stringProp name="HTTPSampler.port">${PYTHON_PORT}</stringProp><stringProp name="HTTPSampler.protocol">${PROTO}</stringProp><stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp><elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="Arguments"><collectionProp name="Arguments.arguments"/></elementProp></ConfigTestElement>
+        <hashTree/>
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Accept Headers"><collectionProp name="HeaderManager.headers"><elementProp name="Accept" elementType="Header"><stringProp name="Header.name">Accept</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp></collectionProp></HeaderManager>
+        <hashTree/>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Payload Cursos"><stringProp name="filename">../../data/simple_py/payload_cursos.csv</stringProp><stringProp name="variableNames">categoria,descricao,carga_horaria</stringProp><boolProp name="ignoreFirstLine">true</boolProp><stringProp name="delimiter">,</stringProp><boolProp name="recycle">true</boolProp><boolProp name="stopThread">false</boolProp><stringProp name="shareMode">shareMode.all</stringProp></CSVDataSet>
+        <hashTree/>
+        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Select Python Read Data Once"/>
+        <hashTree>
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Select Python Read Data"><stringProp name="scriptLanguage">groovy</stringProp><stringProp name="parameters"></stringProp><stringProp name="filename"></stringProp><stringProp name="cacheKey">selectPythonReadDataLoadNoJwt</stringProp><stringProp name="script"><![CDATA[
+def baseDir = org.apache.jmeter.services.FileServer.getFileServer().getBaseDir()
+def csvFile = new File(baseDir, '../../data/simple_py/python_read_ids.csv')
+if (!csvFile.exists()) {
+    csvFile = new File(baseDir, 'data/python_read_ids.csv')
+}
+def lines = csvFile.readLines('UTF-8').findAll { it.trim() }
+if (lines.size() < 2) {
+    throw new IllegalStateException("CSV sem massa de leitura Python: ${csvFile}")
+}
+def rows = lines.drop(1).collect { it.split(',', -1) }
+def row = rows[ctx.getThreadNum() % rows.size()]
+if (row.size() < 4) {
+    throw new IllegalStateException("Linha invalida em ${csvFile}: ${row}")
+}
+vars.put('course_id', row[0].trim())
+vars.put('module_id', row[1].trim())
+vars.put('lesson_id', row[2].trim())
+vars.put('quiz_module_id', row[3].trim())
+SampleResult.setIgnore()
+]]></stringProp></JSR223Sampler>
+          <hashTree/>
+        </hashTree>
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Pace Python Load"><stringProp name="ConstantTimer.delay">${__P(load.delay.ms,50)}</stringProp></ConstantTimer>
+        <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Python Load Course List"><stringProp name="HTTPSampler.path">/courses</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Python Load Course Get"><stringProp name="HTTPSampler.path">/courses/${course_id}</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Python Load Module List"><stringProp name="HTTPSampler.path">/courses/${course_id}/modules</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Python Load Lesson List"><stringProp name="HTTPSampler.path">/modules/${module_id}/lessons</stringProp><stringProp name="HTTPSampler.method">GET</stringProp></HTTPSamplerProxy><hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200"><collectionProp name="Asserion.test_strings"><stringProp name="1">200</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Python Load Create Course"><boolProp name="HTTPSampler.DO_MULTIPART_POST">true</boolProp><stringProp name="HTTPSampler.path">/courses</stringProp><stringProp name="HTTPSampler.method">POST</stringProp><elementProp name="HTTPsampler.Files" elementType="HTTPFileArgs"><collectionProp name="HTTPFileArgs.files"/></elementProp><elementProp name="HTTPsampler.Arguments" elementType="Arguments"><collectionProp name="Arguments.arguments"><elementProp name="dados" elementType="HTTPArgument"><boolProp name="HTTPArgument.always_encode">false</boolProp><stringProp name="Argument.name">dados</stringProp><stringProp name="Argument.value">{&quot;title&quot;:&quot;Curso Load ${__threadNum}-${__counter(FALSE,)}&quot;,&quot;category&quot;:&quot;${categoria}&quot;,&quot;description&quot;:&quot;${descricao}&quot;}</stringProp><stringProp name="Argument.metadata">=</stringProp><boolProp name="HTTPArgument.use_equals">true</boolProp></elementProp></collectionProp></elementProp></HTTPSamplerProxy>
+        <hashTree><ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 201"><collectionProp name="Asserion.test_strings"><stringProp name="1">201</stringProp></collectionProp><stringProp name="Assertion.test_field">Assertion.response_code</stringProp><boolProp name="Assertion.assume_success">false</boolProp><intProp name="Assertion.test_type">8</intProp></ResponseAssertion><hashTree/></hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

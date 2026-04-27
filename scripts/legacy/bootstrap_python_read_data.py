@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 BASE_URL = "http://localhost:8000"
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 LOGIN_CSV = ROOT / "data" / "professores_login.csv"
 OUT_CSV = ROOT / "data" / "python_read_ids.csv"
 

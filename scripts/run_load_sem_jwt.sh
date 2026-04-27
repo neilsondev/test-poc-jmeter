@@ -4,4 +4,4 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-bash scripts/run_suite.sh legacy
+bash scripts/run_load.sh legacy

@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 BASE_URL = "http://localhost:8080"
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 OUT_CSV = ROOT / "data" / "spring_read_ids.csv"
 
 

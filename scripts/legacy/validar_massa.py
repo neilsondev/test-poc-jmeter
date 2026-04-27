@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Valida credenciais e IDs básicos da suíte."""
+"""Valida IDs básicos da suíte no mesmo modo sem JWT usado pelo JMeter."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import urllib.request
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 SPRING_CSV = ROOT / "data" / "spring_read_ids.csv"
 PYTHON_CSV = ROOT / "data" / "python_read_ids.csv"
 
@@ -42,15 +42,6 @@ def assert_status(status: int, payload: dict, url: str, expected: int) -> None:
         raise RuntimeError(f"Falha em {url}: esperado {expected}, recebido {status}, payload={payload}")
 
 
-def validate_python_login(email: str, senha: str) -> str:
-    url = "http://localhost:8000/api/v1/auth/login"
-    status, payload = request_json("POST", url, {"email_ou_usuario": email, "senha": senha})
-    assert_status(status, payload, url, 200)
-    token = payload["data"]["access_token"]
-    print(f"[ok] login python {email}")
-    return token
-
-
 def validate_spring() -> None:
     with SPRING_CSV.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
@@ -72,9 +63,6 @@ def validate_spring() -> None:
 def validate_python() -> None:
     with PYTHON_CSV.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
-            email = row["email"].strip()
-            senha = row["senha"].strip()
-            token = validate_python_login(email, senha)
             urls = [
                 "http://localhost:8000/api/v1/cursos",
                 f"http://localhost:8000/api/v1/cursos/{row['curso_id']}",
@@ -85,7 +73,7 @@ def validate_python() -> None:
                 f"http://localhost:8000/api/v1/modulos/{row['prova_modulo_id']}/prova",
             ]
             for url in urls:
-                status, payload = request_json("GET", url, token=token)
+                status, payload = request_json("GET", url)
                 assert_status(status, payload, url, 200)
     print("[ok] massa python")
 
