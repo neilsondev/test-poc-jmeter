@@ -2,8 +2,8 @@
 
 Suíte JMeter para comparação de endpoints com paridade funcional entre:
 
-- `poc-llm-ufc-simples` em `http://localhost:8080`
-- `agentico_poc_fastapi` em `http://localhost:8000`
+- Spring Boot em `http://localhost:8080`
+- FastAPI Python em `http://localhost:8000`
 
 Escopo:
 
@@ -20,6 +20,15 @@ Fora de escopo:
 - admin
 - matrícula
 
+## Objetivo do repositório
+
+Este repositório pode ser usado de duas formas:
+
+1. Como suíte JMeter portátil, focada em executar planos, gravar `.jtl` e gerar relatórios.
+2. Como parte de uma orquestração maior no workspace local, com bootstrap, validação de massa, reset de banco e subida de serviços.
+
+Se a ideia for levar a suíte para outra máquina, especialmente Windows, trate este repositório primeiro como uma suíte portátil de testes.
+
 ## Estrutura
 
 - `planos/legacy`: planos históricos da API Python antiga (`/api/v1`, payloads em português)
@@ -30,39 +39,110 @@ Fora de escopo:
 - `scripts/legacy/`: bootstrap, validação e utilitários da API Python legacy
 - `scripts/simple_py/`: bootstrap e validação da PoC Python atual
 - `scripts/spring/`: bootstrap da massa de leitura da API Spring
+- `scripts/orchestrator/`: helpers usados pela automação completa de benchmark
 - `resultados/<variante>`: saída non-GUI e relatórios por variante
 
-## Pré-requisitos
+## Modos de uso
+
+### 1. Modo portátil
+
+Use este modo quando:
+
+- a máquina já tem os serviços em execução
+- você só quer rodar os testes JMeter
+- você quer levar a suíte para outro ambiente sem depender do mesmo esquema de pastas do workspace atual
+
+Neste modo, o repositório depende apenas de:
+
+- JMeter instalado
+- Java disponível
+- Python 3 para os scripts de relatório
+- endpoints Spring e Python acessíveis
+- massa de teste previamente preparada
+
+Os entrypoints principais são:
+
+- `bash scripts/run_suite.sh legacy`
+- `bash scripts/run_suite.sh simple_py`
+- `bash scripts/run_load.sh legacy`
+- `bash scripts/run_load.sh simple_py`
+
+### 2. Modo orquestrado
+
+Use este modo quando:
+
+- você quer automatizar bootstrap, validação, subida de serviços e ciclo completo de benchmark
+- a máquina segue o mesmo padrão do workspace atual ou um layout compatível
+
+Este modo hoje depende de scripts externos ao repositório e de um ambiente mais acoplado ao workspace local.
+
+## Pré-requisitos mínimos para executar os testes
+
+### Para rodar apenas a suíte JMeter
 
 - JMeter 5.6+
 - Java 17+
 - Python 3.11+
-- APIs Spring e Python rodando
-- banco do Python inicializado
+- API Spring disponível
+- API Python disponível
+- arquivos de massa compatíveis em `data/<variante>/`
+
+### Para usar a automação completa do ciclo
+
+Além dos itens acima:
+
+- Bash
+- `curl`
+- `psql`
+- `dropdb`
+- `createdb`
+- projetos Spring e Python disponíveis na máquina
+- ambiente capaz de subir os serviços com os comandos esperados
+
+Observação:
+- a automação completa foi pensada principalmente para Linux ou WSL
+- em Windows puro, o caminho mais simples é usar o modo portátil
+
+## O que precisa estar pronto antes da execução
+
+### Variante `legacy`
+
+- banco Python inicializado
 - pelo menos um `ADMIN` ativo no Python
-- API Python com `LOAD_TEST_MODE=true`
-- `LOAD_TEST_PROFESSOR_ID` apontando para um professor com massa compatível com `data/python_read_ids.csv`
+- `LOAD_TEST_MODE=true`
+- `LOAD_TEST_PROFESSOR_ID` apontando para um professor com massa compatível com `data/legacy/python_read_ids.csv`
 
-## Ordem de execução
+### Variante `simple_py`
 
-1. Garantir admin ativo no Python legacy usando [bootstrap_python_admin.md](./scripts/legacy/bootstrap_python_admin.md).
-2. Confirmar o modo sem JWT no FastAPI:
+- banco Python inicializado
+- massa de leitura gerada em `data/simple_py/python_read_ids.csv`
+- endpoints `/courses`, `/modules`, `/lessons` e `/quiz` disponíveis
+
+### Para ambas
+
+- API Spring acessível
+- massa de leitura do Spring gerada
+- CSVs de payload presentes
+
+## Preparação de massa
+
+### Para o legado
+
+Garantir admin ativo no Python legacy usando [bootstrap_python_admin.md](./scripts/legacy/bootstrap_python_admin.md).
+
+Executar:
 
 ```bash
-LOAD_TEST_MODE=true
-LOAD_TEST_PROFESSOR_ID=1
-```
-
-3. Executar para o legado:
-
-```bash
+bash scripts/legacy/bootstrap_python_admin_insert.sh
 python3 scripts/legacy/bootstrap_python_test_users.py
 python3 scripts/spring/bootstrap_spring_read_data.py
 python3 scripts/legacy/bootstrap_python_read_data.py
 python3 scripts/legacy/validar_massa.py
 ```
 
-Para a PoC Python atual (`simple_py`):
+### Para a PoC Python atual (`simple_py`)
+
+Executar:
 
 ```bash
 python3 scripts/spring/bootstrap_spring_read_data.py
@@ -70,22 +150,35 @@ python3 scripts/simple_py/bootstrap_python_read_data.py
 python3 scripts/simple_py/validar_massa.py
 ```
 
-4. Validar no GUI:
+## Execução dos testes
+
+### Validar no GUI
 
 ```bash
 jmeter
 ```
 
-Abrir `planos/legacy/paridade_smoke.jmx` ou `planos/simple_py/paridade_smoke.jmx`.
+Abrir:
 
-5. Executar non-GUI:
+- `planos/legacy/paridade_smoke.jmx`
+- `planos/simple_py/paridade_smoke.jmx`
+
+### Executar a suíte non-GUI
 
 ```bash
 bash scripts/run_suite.sh legacy
 bash scripts/run_suite.sh simple_py
 ```
 
-6. Executar carga quando smoke e baselines estiverem estáveis:
+Para executar cenários específicos:
+
+```bash
+bash scripts/run_suite.sh simple_py --scenarios smoke,baseline_leitura
+```
+
+### Executar carga
+
+Use quando smoke e baselines estiverem estáveis:
 
 ```bash
 bash scripts/run_load.sh legacy
@@ -98,7 +191,7 @@ Para ajustar a carga:
 LOAD_THREADS=50 LOAD_LOOPS=40 LOAD_RAMP_SECONDS=90 LOAD_DELAY_MS=25 bash scripts/run_load.sh simple_py
 ```
 
-## Planos
+## Planos disponíveis
 
 - `paridade_smoke.jmx`: validação rápida
 - `paridade_baseline_leitura.jmx`: leituras com massa pré-criada
@@ -118,14 +211,41 @@ LOAD_THREADS=50 LOAD_LOOPS=40 LOAD_RAMP_SECONDS=90 LOAD_DELAY_MS=25 bash scripts
 
 ## Relatórios
 
-- `python3 scripts/gerar_relatorio_variantes.py --variant legacy`
-- `python3 scripts/gerar_relatorio_variantes.py --variant simple_py`
+Para regenerar o relatório de uma variante:
 
-O relatório novo gera:
+```bash
+python3 scripts/gerar_relatorio_variantes.py --variant legacy
+python3 scripts/gerar_relatorio_variantes.py --variant simple_py
+```
+
+Para regenerar o relatório de uma pasta específica de resultados:
+
+```bash
+python3 scripts/gerar_relatorio_variantes.py --variant simple_py --results-dir /caminho/da/rodada
+```
+
+Os relatórios gerados são:
 
 - `resultados/<variante>/relatorio/dashboard.html`
 - `resultados/<variante>/relatorio/relatorio_resultados.md`
 - `resultados/<variante>/relatorio/summary_by_label.csv`
 - `resultados/<variante>/relatorio/comparison_spring_python.csv`
 
-Cada dashboard agora explicita o objetivo de cada cenário antes de mostrar as métricas.
+Cada dashboard explicita o objetivo de cada cenário antes de mostrar as métricas.
+
+## Limitações atuais de portabilidade
+
+Hoje, a suíte é mais portátil no modo de execução dos planos do que no modo de orquestração completa.
+
+Os pontos que ainda dificultam levar a automação completa para outra máquina são:
+
+- dependência de scripts externos ao repositório
+- expectativa de projetos irmãos com nomes e caminhos específicos
+- uso forte de Bash e ferramentas típicas de Linux
+- dependência opcional de reset de banco e subida automatizada dos serviços
+
+Se a meta for usar em Windows, a recomendação atual é:
+
+1. subir Spring e Python separadamente
+2. preparar a massa
+3. usar `run_suite.sh`, `run_load.sh` e `gerar_relatorio_variantes.py`
