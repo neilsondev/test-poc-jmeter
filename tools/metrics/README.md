@@ -6,6 +6,11 @@ Este diretório reúne as ferramentas auxiliares de métricas e consolidação u
 - `consolidate_benchmark_runs.py`: consolida múltiplas rodadas por `label`
 - `simulate_p99_sensitivity.py`: simula impacto de mudanças hipotéticas no `p99` sem alterar o `.jtl`
 
+Pré-requisito:
+
+- o Python usado para `metrics_runner.py` precisa ter `psutil` instalado
+- na orquestração, esse interpretador é controlado por `METRICS_PYTHON_BIN`
+
 Uso comum:
 
 ```bash

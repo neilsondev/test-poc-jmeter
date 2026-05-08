@@ -256,6 +256,23 @@ validate_environment() {
   [[ "$JMETER_DELAY_MS" =~ ^[0-9]+$ ]] || die "JMETER_DELAY_MS invalido: $JMETER_DELAY_MS"
 
   PYTHON_BASE_URL="$(resolve_python_base_url)"
+  validate_metrics_runtime
+}
+
+validate_metrics_runtime() {
+  if ! is_true "$METRICS_ENABLED"; then
+    log_info "Coleta de metricas desabilitada por configuracao."
+    return 0
+  fi
+
+  require_command "$METRICS_PYTHON_BIN"
+  require_file "$METRICS_TOOL_DIR/metrics_runner.py"
+
+  if ! "$METRICS_PYTHON_BIN" -c "import psutil" >/dev/null 2>&1; then
+    log_warn "Coleta de metricas desabilitada: $METRICS_PYTHON_BIN nao possui psutil."
+    log_warn "Instale com '$METRICS_PYTHON_BIN -m pip install psutil' ou ajuste METRICS_PYTHON_BIN em local/benchmark.env."
+    METRICS_ENABLED="false"
+  fi
 }
 
 build_run_context() {
@@ -299,7 +316,7 @@ start_metrics_collection() {
   log_info "Iniciando coleta de metricas em $METRICS_DIR"
   (
     cd "$JMETER_SUITE_DIR"
-    exec python3 tools/metrics/metrics_runner.py \
+    exec "$METRICS_PYTHON_BIN" tools/metrics/metrics_runner.py \
       --scenario "$RUN_FLOW" \
       --targets-file "$PROCESS_TARGETS_PATH" \
       --results-dir "$METRICS_DIR" \
@@ -309,7 +326,9 @@ start_metrics_collection() {
 
   sleep 1
   if ! kill -0 "$METRICS_MONITOR_PID" >/dev/null 2>&1; then
-    die "metrics_runner.py falhou ao iniciar. Verifique $METRICS_LOG"
+    log_error "metrics_runner.py falhou ao iniciar. Verifique $METRICS_LOG"
+    METRICS_MONITOR_PID=""
+    return 0
   fi
 }
 

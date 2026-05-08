@@ -13,13 +13,6 @@ Escopo:
 - avaliação manual
 - operações de leitura equivalentes
 
-Fora de escopo:
-
-- IA
-- autenticação como benchmark principal
-- admin
-- matrícula
-
 ## Objetivo do repositório
 
 Este repositório pode ser usado de duas formas:
@@ -102,6 +95,7 @@ Além dos itens acima:
 - `psql`
 - `dropdb`
 - `createdb`
+- `psutil` instalado no Python usado pela coleta de métricas
 - projetos Spring e Python disponíveis na máquina
 - ambiente capaz de subir os serviços com os comandos esperados
 
@@ -112,6 +106,12 @@ cp config/benchmark.env.example local/benchmark.env
 ```
 
 Depois ajuste os caminhos dos projetos e, se necessário, os comandos de start.
+
+Para a coleta de métricas:
+
+- `METRICS_PYTHON_BIN` define qual Python executa `tools/metrics/metrics_runner.py`
+- esse interpretador precisa conseguir importar `psutil`
+- se preferir rodar sem métricas, configure `METRICS_ENABLED=false`
 
 Observação:
 - a automação completa foi pensada principalmente para Linux ou WSL
@@ -273,25 +273,3 @@ Para consolidar várias rodadas da mesma campanha:
 ```bash
 python3 tools/metrics/consolidate_benchmark_runs.py --label suite-load-maio-2026
 ```
-
-Para estudar sensibilidade de `p99` sem alterar o `.jtl`:
-
-```bash
-python3 tools/metrics/simulate_p99_sensitivity.py --jtl /caminho/arquivo.jtl --label "Python Load Course List"
-```
-
-## Limitações atuais de portabilidade
-
-Hoje, a suíte é mais portátil no modo de execução dos planos do que no modo de orquestração completa.
-
-Os pontos que ainda dificultam levar a automação completa para outra máquina são:
-
-- expectativa de projetos irmãos com nomes e caminhos específicos
-- uso forte de Bash e ferramentas típicas de Linux
-- dependência opcional de reset de banco e subida automatizada dos serviços
-
-Se a meta for usar em Windows, a recomendação atual é:
-
-1. subir Spring e Python separadamente
-2. preparar a massa
-3. usar `run_suite.sh`, `run_load.sh` e `gerar_relatorio_variantes.py`
