@@ -17,3 +17,9 @@ __pycache__/
 
 # Virtual environment
 .venv/
+
+# Local machine-specific config
+local/*.env
+
+# Aggregated campaign outputs
+tools/metrics/campaign_reports/

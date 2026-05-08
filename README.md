@@ -27,8 +27,6 @@ Este repositório pode ser usado de duas formas:
 1. Como suíte JMeter portátil, focada em executar planos, gravar `.jtl` e gerar relatórios.
 2. Como parte de uma orquestração maior no workspace local, com bootstrap, validação de massa, reset de banco e subida de serviços.
 
-Se a ideia for levar a suíte para outra máquina, especialmente Windows, trate este repositório primeiro como uma suíte portátil de testes.
-
 ## Estrutura
 
 - `planos/legacy`: planos históricos da API Python antiga (`/api/v1`, payloads em português)
@@ -40,7 +38,10 @@ Se a ideia for levar a suíte para outra máquina, especialmente Windows, trate 
 - `scripts/simple_py/`: bootstrap e validação da PoC Python atual
 - `scripts/spring/`: bootstrap da massa de leitura da API Spring
 - `scripts/orchestrator/`: helpers usados pela automação completa de benchmark
+- `scripts/tools/`: utilitários auxiliares, como reset de banco
+- `tools/metrics/`: coleta de métricas, consolidação de campanhas e simulação de p99
 - `resultados/<variante>`: saída non-GUI e relatórios por variante
+- `local/benchmark.env`: configuração local por máquina para a orquestração
 
 ## Modos de uso
 
@@ -76,6 +77,11 @@ Use este modo quando:
 
 Este modo hoje depende de scripts externos ao repositório e de um ambiente mais acoplado ao workspace local.
 
+Observação:
+- a suíte agora também possui um `run_benchmark_cycle.sh` e um `benchmark_env.sh` dentro do próprio repositório
+- a configuração por máquina deve ficar em `local/benchmark.env`
+- use `config/benchmark.env.example` como ponto de partida
+
 ## Pré-requisitos mínimos para executar os testes
 
 ### Para rodar apenas a suíte JMeter
@@ -98,6 +104,14 @@ Além dos itens acima:
 - `createdb`
 - projetos Spring e Python disponíveis na máquina
 - ambiente capaz de subir os serviços com os comandos esperados
+
+Antes de usar a automação completa:
+
+```bash
+cp config/benchmark.env.example local/benchmark.env
+```
+
+Depois ajuste os caminhos dos projetos e, se necessário, os comandos de start.
 
 Observação:
 - a automação completa foi pensada principalmente para Linux ou WSL
@@ -191,6 +205,20 @@ Para ajustar a carga:
 LOAD_THREADS=50 LOAD_LOOPS=40 LOAD_RAMP_SECONDS=90 LOAD_DELAY_MS=25 bash scripts/run_load.sh simple_py
 ```
 
+### Executar o ciclo completo de benchmark
+
+Quando quiser usar a orquestração completa da suíte:
+
+```bash
+bash run_benchmark_cycle.sh --variant simple_py --run-flow suite+load
+```
+
+Exemplo com label:
+
+```bash
+bash run_benchmark_cycle.sh --variant simple_py --run-flow suite+load --label suite-load-maio-2026
+```
+
 ## Planos disponíveis
 
 - `paridade_smoke.jmx`: validação rápida
@@ -233,13 +261,31 @@ Os relatórios gerados são:
 
 Cada dashboard explicita o objetivo de cada cenário antes de mostrar as métricas.
 
+## Métricas e consolidação
+
+As rodadas executadas pelo `run_benchmark_cycle.sh` podem gerar:
+
+- `resultados/<variante>/<run_id>/metricas/metrics.csv`
+- `resultados/<variante>/<run_id>/metricas/report.md`
+
+Para consolidar várias rodadas da mesma campanha:
+
+```bash
+python3 tools/metrics/consolidate_benchmark_runs.py --label suite-load-maio-2026
+```
+
+Para estudar sensibilidade de `p99` sem alterar o `.jtl`:
+
+```bash
+python3 tools/metrics/simulate_p99_sensitivity.py --jtl /caminho/arquivo.jtl --label "Python Load Course List"
+```
+
 ## Limitações atuais de portabilidade
 
 Hoje, a suíte é mais portátil no modo de execução dos planos do que no modo de orquestração completa.
 
 Os pontos que ainda dificultam levar a automação completa para outra máquina são:
 
-- dependência de scripts externos ao repositório
 - expectativa de projetos irmãos com nomes e caminhos específicos
 - uso forte de Bash e ferramentas típicas de Linux
 - dependência opcional de reset de banco e subida automatizada dos serviços
