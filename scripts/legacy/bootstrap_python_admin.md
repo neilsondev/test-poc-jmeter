@@ -1,8 +1,14 @@
-# Bootstrap do Admin Python
+# Bootstrap Manual do Admin Python Legacy
 
-O projeto Python exige um `ADMIN` ativo para ativar professores de benchmark, mas o código atual não garante seed automático.
+Este guia descreve o caminho manual para garantir um `ADMIN` ativo na variante `legacy`.
 
-Antes de rodar os scripts da suíte, garanta um admin ativo.
+Use este material quando:
+
+- você estiver preparando a variante `legacy` manualmente
+- não quiser depender da orquestração completa
+- o bootstrap automático do admin não for desejado ou não estiver disponível no ambiente
+
+No fluxo atual com `run_benchmark_cycle.sh`, o seed da variante `legacy` já pode chamar `bootstrap_python_admin_insert.sh` automaticamente quando a rodada é configurada para refazer massa.
 
 ## Opção 1: usar um admin já existente
 
@@ -36,7 +42,9 @@ O script usa, por padrão:
 - e-mail admin: `admin@teste.com`
 - senha admin: `Senha@123`
 
-Ele pede a senha do usuário do banco no terminal, gera um hash bcrypt compatível com o projeto e executa um `INSERT INTO usuarios ... ON CONFLICT (email) DO UPDATE` para deixar o admin ativo.
+Ele gera um hash bcrypt compatível com o projeto e executa um `INSERT INTO usuarios ... ON CONFLICT (email) DO UPDATE` para deixar o admin ativo.
+
+Se `DB_PASSWORD` ou `PGPASSWORD` já estiverem definidos no ambiente, o script reutiliza esse valor e não precisa perguntar a senha no terminal.
 
 Se precisar sobrescrever algum valor:
 
@@ -67,4 +75,4 @@ O retorno esperado deve conter:
 - `status = 200`
 - `data.access_token`
 
-Sem isso, os scripts de bootstrap da suíte não vão conseguir ativar professores.
+Sem isso, os scripts de bootstrap da suíte não vão conseguir ativar professores na variante `legacy`.

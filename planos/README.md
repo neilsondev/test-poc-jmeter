@@ -41,7 +41,7 @@ Exemplo: `TG_PYTHON_READ` significa "Thread Group da stack Python para fluxo de 
 
 Todos os planos usam variáveis de ambiente carregadas por `config/ambientes.properties`, como `SPRING_HOST`, `SPRING_PORT`, `PYTHON_HOST`, `PYTHON_PORT` e `PROTO`.
 
-Os fluxos Python pressupõem a API FastAPI em modo sem JWT:
+Os fluxos Python pressupõem a API FastAPI em modo sem JWT para a variante `legacy`:
 
 ```bash
 LOAD_TEST_MODE=true
@@ -62,6 +62,10 @@ O Spring não faz login. O Python também não faz login nos planos atuais; a va
 Nas leituras, há um `ConstantTimer` de `100 ms` nos planos de baseline/regressão. Esse timer aplica uma cadência mínima entre requisições e evita que o teste vire apenas uma rajada sem pausa.
 
 ## Arquivos de massa usados
+
+As variantes atuais usam arquivos dedicados em `data/legacy/` e `data/simple_py/`.
+
+Alguns planos ainda possuem fallback para arquivos genéricos em `data/`, por compatibilidade com o histórico do projeto, mas o layout recomendado é o variant-scoped.
 
 - `../data/<variant>/spring_read_ids.csv`: IDs de curso, modulo e aula usados nos testes de leitura Spring.
 - `../data/<variant>/python_read_ids.csv`: IDs usados nos testes de leitura Python. O arquivo ainda possui colunas de credenciais por compatibilidade com scripts, mas os planos sem JWT usam os IDs.
@@ -267,7 +271,17 @@ LOAD_THREADS=50 LOAD_LOOPS=40 LOAD_RAMP_SECONDS=90 LOAD_DELAY_MS=25 bash scripts
 4. Rode `paridade_full_regressao.jmx` para validar o conjunto misto.
 5. Rode `paridade_load_sem_jwt.jmx` para carga mista sem JWT.
 
-O script `scripts/run_all.sh` executa smoke, baselines e regressão da variante `legacy`, gravando os resultados em `resultados/<variante>/<cenario>`. O plano de carga é executado separadamente por `scripts/run_load.sh <variante>`.
+Use os wrappers atuais da suíte:
+
+- `bash scripts/run_suite.sh legacy`
+- `bash scripts/run_suite.sh simple_py`
+- `bash scripts/run_load.sh legacy`
+- `bash scripts/run_load.sh simple_py`
+
+Para rodar apenas parte da suíte:
+
+- `bash scripts/run_suite.sh <variante> --scenarios smoke`
+- `bash scripts/run_suite.sh <variante> --scenarios baseline_leitura,baseline_escrita`
 
 ## Como os resultados devem ser lidos
 
@@ -277,3 +291,4 @@ O script `scripts/run_all.sh` executa smoke, baselines e regressão da variante 
 - Prefira `p95` e `p99` para avaliar estabilidade. A média pode esconder picos.
 - Em leitura, confira se `LOAD_TEST_PROFESSOR_ID` consegue acessar os IDs de `data/<variant>/python_read_ids.csv`.
 - Em escrita, lembre que cada etapa depende da anterior. Uma falha de curso pode invalidar modulo, aula e avaliação.
+- Se houver dúvida sobre os resultados, regenere o relatório com `python3 scripts/gerar_relatorio_variantes.py --variant <variante> --results-dir <pasta_da_rodada>`.
