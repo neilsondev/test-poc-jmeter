@@ -28,7 +28,7 @@ load_local_env_file() {
   done <"$path"
 }
 
-LOCAL_BENCHMARK_ENV="${LOCAL_BENCHMARK_ENV:-$SUITE_ROOT/local/benchmark.env}"
+LOCAL_BENCHMARK_ENV="${LOCAL_BENCHMARK_ENV:-$SUITE_ROOT/config/benchmark.env}"
 load_local_env_file "$LOCAL_BENCHMARK_ENV"
 
 JMETER_SUITE_DIR="${JMETER_SUITE_DIR:-$SUITE_ROOT}"

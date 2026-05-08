@@ -270,7 +270,7 @@ validate_metrics_runtime() {
 
   if ! "$METRICS_PYTHON_BIN" -c "import psutil" >/dev/null 2>&1; then
     log_warn "Coleta de metricas desabilitada: $METRICS_PYTHON_BIN nao possui psutil."
-    log_warn "Instale com '$METRICS_PYTHON_BIN -m pip install psutil' ou ajuste METRICS_PYTHON_BIN em local/benchmark.env."
+    log_warn "Instale com '$METRICS_PYTHON_BIN -m pip install psutil' ou ajuste METRICS_PYTHON_BIN em config/benchmark.env."
     METRICS_ENABLED="false"
   fi
 }

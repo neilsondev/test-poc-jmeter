@@ -19,7 +19,6 @@ __pycache__/
 .venv/
 
 # Local machine-specific config
-local/*.env
 config/benchmark.env
 
 # Aggregated campaign outputs
