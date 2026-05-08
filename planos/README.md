@@ -48,7 +48,7 @@ LOAD_TEST_MODE=true
 LOAD_TEST_PROFESSOR_ID=1
 ```
 
-Nenhum plano Python faz `POST /api/v1/auth/login`, extrai token ou envia header `Authorization`. O professor definido em `LOAD_TEST_PROFESSOR_ID` precisa existir e ter acesso à massa usada em `data/python_read_ids.csv`.
+Nenhum plano Python faz `POST /api/v1/auth/login`, extrai token ou envia header `Authorization`. O professor definido em `LOAD_TEST_PROFESSOR_ID` precisa existir e ter acesso à massa usada em `data/<variant>/python_read_ids.csv`.
 
 As regras de resposta são simples e explicitas:
 
@@ -63,10 +63,10 @@ Nas leituras, há um `ConstantTimer` de `100 ms` nos planos de baseline/regress�
 
 ## Arquivos de massa usados
 
-- `../data/spring_read_ids.csv`: IDs de curso, modulo e aula usados nos testes de leitura Spring.
-- `../data/python_read_ids.csv`: IDs usados nos testes de leitura Python. O arquivo ainda possui colunas de credenciais por compatibilidade com scripts, mas os planos sem JWT usam os IDs.
-- `../data/professores_login.csv`: credenciais usadas pelos scripts de bootstrap, não pelos planos JMeter sem JWT.
-- `../data/payload_cursos.csv`: partes variáveis do payload de cursos usados nos fluxos de criação.
+- `../data/<variant>/spring_read_ids.csv`: IDs de curso, modulo e aula usados nos testes de leitura Spring.
+- `../data/<variant>/python_read_ids.csv`: IDs usados nos testes de leitura Python. O arquivo ainda possui colunas de credenciais por compatibilidade com scripts, mas os planos sem JWT usam os IDs.
+- `../data/<variant>/professores_login.csv`: credenciais usadas pelos scripts de bootstrap, não pelos planos JMeter sem JWT.
+- `../data/<variant>/payload_cursos.csv`: partes variáveis do payload de cursos usados nos fluxos de criação.
 
 ## `paridade_smoke.jmx`
 
@@ -275,5 +275,5 @@ O script `scripts/run_all.sh` executa smoke, baselines e regressão da variante 
 - Compare Spring e Python por operação equivalente, não apenas pelo total do cenário.
 - Confirme que não há amostras de login Python; os planos atuais medem os endpoints de domínio sem JWT.
 - Prefira `p95` e `p99` para avaliar estabilidade. A média pode esconder picos.
-- Em leitura, confira se `LOAD_TEST_PROFESSOR_ID` consegue acessar os IDs de `python_read_ids.csv`.
+- Em leitura, confira se `LOAD_TEST_PROFESSOR_ID` consegue acessar os IDs de `data/<variant>/python_read_ids.csv`.
 - Em escrita, lembre que cada etapa depende da anterior. Uma falha de curso pode invalidar modulo, aula e avaliação.

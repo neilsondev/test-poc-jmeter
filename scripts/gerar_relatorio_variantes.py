@@ -724,9 +724,10 @@ def build_dashboard(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--variant", required=True, choices=["legacy", "simple_py"])
+    parser.add_argument("--results-dir")
     args = parser.parse_args()
 
-    results_dir = ROOT / "resultados" / args.variant
+    results_dir = Path(args.results_dir) if args.results_dir else ROOT / "resultados" / args.variant
     report_dir = results_dir / "relatorio"
     report_dir.mkdir(parents=True, exist_ok=True)
 
