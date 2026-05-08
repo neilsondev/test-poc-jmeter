@@ -17,7 +17,7 @@ BASE_URL = os.getenv("BOOTSTRAP_BASE_URL", "http://localhost:8000").rstrip("/")
 ADMIN_EMAIL = os.getenv("BOOTSTRAP_ADMIN_EMAIL", "admin@teste.com")
 ADMIN_PASSWORD = os.getenv("BOOTSTRAP_ADMIN_PASSWORD", "Senha@123")
 ROOT = Path(__file__).resolve().parent.parent.parent
-CSV_PATH = ROOT / "data" / "professores_login.csv"
+CSV_PATH = ROOT / "data" / "legacy" / "professores_login.csv"
 
 
 def request_json(method: str, url: str, payload: dict | None = None, token: str | None = None) -> tuple[int, dict]:

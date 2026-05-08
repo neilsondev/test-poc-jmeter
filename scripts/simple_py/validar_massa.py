@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -14,6 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 SPRING_CSV = ROOT / "data" / "simple_py" / "spring_read_ids.csv"
 PYTHON_CSV = ROOT / "data" / "simple_py" / "python_read_ids.csv"
+SPRING_BASE_URL = os.getenv("SPRING_VALIDATION_BASE_URL", "http://localhost:8080").rstrip("/")
+PYTHON_BASE_URL = os.getenv("PYTHON_VALIDATION_BASE_URL", "http://localhost:8000").rstrip("/")
 
 
 def request_json(url: str) -> tuple[int, dict]:
@@ -39,13 +42,13 @@ def validate_spring() -> None:
     with SPRING_CSV.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             urls = [
-                "http://localhost:8080/courses",
-                f"http://localhost:8080/courses/{row['course_id']}",
-                f"http://localhost:8080/courses/{row['course_id']}/modules",
-                f"http://localhost:8080/modules/{row['module_id']}",
-                f"http://localhost:8080/modules/{row['module_id']}/lessons",
-                f"http://localhost:8080/lessons/{row['lesson_id']}",
-                f"http://localhost:8080/modules/{row['module_id']}/quiz",
+                f"{SPRING_BASE_URL}/courses",
+                f"{SPRING_BASE_URL}/courses/{row['course_id']}",
+                f"{SPRING_BASE_URL}/courses/{row['course_id']}/modules",
+                f"{SPRING_BASE_URL}/modules/{row['module_id']}",
+                f"{SPRING_BASE_URL}/modules/{row['module_id']}/lessons",
+                f"{SPRING_BASE_URL}/lessons/{row['lesson_id']}",
+                f"{SPRING_BASE_URL}/modules/{row['module_id']}/quiz",
             ]
             for url in urls:
                 status, payload = request_json(url)
@@ -57,13 +60,13 @@ def validate_python() -> None:
     with PYTHON_CSV.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             urls = [
-                "http://localhost:8000/courses",
-                f"http://localhost:8000/courses/{row['course_id']}",
-                f"http://localhost:8000/courses/{row['course_id']}/modules",
-                f"http://localhost:8000/modules/{row['module_id']}",
-                f"http://localhost:8000/modules/{row['module_id']}/lessons",
-                f"http://localhost:8000/lessons/{row['lesson_id']}",
-                f"http://localhost:8000/modules/{row['quiz_module_id']}/quiz",
+                f"{PYTHON_BASE_URL}/courses",
+                f"{PYTHON_BASE_URL}/courses/{row['course_id']}",
+                f"{PYTHON_BASE_URL}/courses/{row['course_id']}/modules",
+                f"{PYTHON_BASE_URL}/modules/{row['module_id']}",
+                f"{PYTHON_BASE_URL}/modules/{row['module_id']}/lessons",
+                f"{PYTHON_BASE_URL}/lessons/{row['lesson_id']}",
+                f"{PYTHON_BASE_URL}/modules/{row['quiz_module_id']}/quiz",
             ]
             for url in urls:
                 status, payload = request_json(url)

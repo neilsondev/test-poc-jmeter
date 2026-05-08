@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -12,8 +13,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-SPRING_CSV = ROOT / "data" / "spring_read_ids.csv"
-PYTHON_CSV = ROOT / "data" / "python_read_ids.csv"
+DATA_DIR = ROOT / "data" / "legacy"
+SPRING_CSV = DATA_DIR / "spring_read_ids.csv"
+PYTHON_CSV = DATA_DIR / "python_read_ids.csv"
+SPRING_BASE_URL = os.getenv("SPRING_VALIDATION_BASE_URL", "http://localhost:8080").rstrip("/")
+PYTHON_BASE_URL = os.getenv("PYTHON_VALIDATION_BASE_URL", "http://localhost:8000").rstrip("/")
 
 
 def request_json(method: str, url: str, payload: dict | None = None, token: str | None = None) -> tuple[int, dict]:
@@ -46,13 +50,13 @@ def validate_spring() -> None:
     with SPRING_CSV.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             urls = [
-                "http://localhost:8080/courses",
-                f"http://localhost:8080/courses/{row['course_id']}",
-                f"http://localhost:8080/courses/{row['course_id']}/modules",
-                f"http://localhost:8080/modules/{row['module_id']}",
-                f"http://localhost:8080/modules/{row['module_id']}/lessons",
-                f"http://localhost:8080/lessons/{row['lesson_id']}",
-                f"http://localhost:8080/modules/{row['module_id']}/quiz",
+                f"{SPRING_BASE_URL}/courses",
+                f"{SPRING_BASE_URL}/courses/{row['course_id']}",
+                f"{SPRING_BASE_URL}/courses/{row['course_id']}/modules",
+                f"{SPRING_BASE_URL}/modules/{row['module_id']}",
+                f"{SPRING_BASE_URL}/modules/{row['module_id']}/lessons",
+                f"{SPRING_BASE_URL}/lessons/{row['lesson_id']}",
+                f"{SPRING_BASE_URL}/modules/{row['module_id']}/quiz",
             ]
             for url in urls:
                 status, payload = request_json("GET", url)
@@ -64,13 +68,13 @@ def validate_python() -> None:
     with PYTHON_CSV.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             urls = [
-                "http://localhost:8000/api/v1/cursos",
-                f"http://localhost:8000/api/v1/cursos/{row['curso_id']}",
-                f"http://localhost:8000/api/v1/cursos/{row['curso_id']}/modulos",
-                f"http://localhost:8000/api/v1/cursos/{row['curso_id']}/modulos/{row['modulo_id']}",
-                f"http://localhost:8000/api/v1/modulos/{row['modulo_id']}/aulas",
-                f"http://localhost:8000/api/v1/modulos/{row['modulo_id']}/aulas/{row['aula_id']}",
-                f"http://localhost:8000/api/v1/modulos/{row['prova_modulo_id']}/prova",
+                f"{PYTHON_BASE_URL}/api/v1/cursos",
+                f"{PYTHON_BASE_URL}/api/v1/cursos/{row['curso_id']}",
+                f"{PYTHON_BASE_URL}/api/v1/cursos/{row['curso_id']}/modulos",
+                f"{PYTHON_BASE_URL}/api/v1/cursos/{row['curso_id']}/modulos/{row['modulo_id']}",
+                f"{PYTHON_BASE_URL}/api/v1/modulos/{row['modulo_id']}/aulas",
+                f"{PYTHON_BASE_URL}/api/v1/modulos/{row['modulo_id']}/aulas/{row['aula_id']}",
+                f"{PYTHON_BASE_URL}/api/v1/modulos/{row['prova_modulo_id']}/prova",
             ]
             for url in urls:
                 status, payload = request_json("GET", url)

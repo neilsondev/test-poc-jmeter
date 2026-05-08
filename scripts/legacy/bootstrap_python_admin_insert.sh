@@ -27,8 +27,11 @@ if [[ -z "$PYTHON_BIN" ]] || ! "$PYTHON_BIN" -c 'import bcrypt' >/dev/null 2>&1;
   exit 1
 fi
 
-read -r -s -p "Senha do banco para ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}: " DB_PASSWORD
-echo
+DB_PASSWORD="${DB_PASSWORD:-${PGPASSWORD:-}}"
+if [[ -z "$DB_PASSWORD" ]]; then
+  read -r -s -p "Senha do banco para ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}: " DB_PASSWORD
+  echo
+fi
 
 PASSWORD_HASH="$(
   ADMIN_PASSWORD="$ADMIN_PASSWORD" "$PYTHON_BIN" -c 'import os, bcrypt; print(bcrypt.hashpw(os.environ["ADMIN_PASSWORD"].encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8"))'

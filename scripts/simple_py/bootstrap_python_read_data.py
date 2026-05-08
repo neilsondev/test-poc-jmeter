@@ -5,13 +5,14 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.getenv("BOOTSTRAP_BASE_URL", "http://localhost:8000").rstrip("/")
 ROOT = Path(__file__).resolve().parent.parent.parent
 OUT_CSV = ROOT / "data" / "simple_py" / "python_read_ids.csv"
 

@@ -5,16 +5,18 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.getenv("BOOTSTRAP_BASE_URL", "http://localhost:8000").rstrip("/")
 ROOT = Path(__file__).resolve().parent.parent.parent
-LOGIN_CSV = ROOT / "data" / "professores_login.csv"
-OUT_CSV = ROOT / "data" / "python_read_ids.csv"
+DATA_DIR = ROOT / "data" / "legacy"
+LOGIN_CSV = DATA_DIR / "professores_login.csv"
+OUT_CSV = DATA_DIR / "python_read_ids.csv"
 
 
 def request_json(method: str, url: str, payload: dict | None = None, token: str | None = None) -> tuple[int, dict]:
@@ -133,6 +135,7 @@ def main() -> int:
                     "prova_modulo_id": modulo_id,
                 }
             )
+    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     with OUT_CSV.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
