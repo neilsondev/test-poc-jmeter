@@ -20,6 +20,7 @@ __pycache__/
 
 # Local machine-specific config
 local/*.env
+config/benchmark.env
 
 # Aggregated campaign outputs
 tools/metrics/campaign_reports/
