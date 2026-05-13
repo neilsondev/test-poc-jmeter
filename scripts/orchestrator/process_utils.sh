@@ -3,6 +3,11 @@
 REGISTERED_PIDS=()
 REGISTERED_LABELS=()
 
+clear_registered_processes() {
+  REGISTERED_PIDS=()
+  REGISTERED_LABELS=()
+}
+
 register_process() {
   local label="$1"
   local pid="$2"
@@ -17,6 +22,19 @@ write_process_manifest() {
   for idx in "${!REGISTERED_PIDS[@]}"; do
     printf "%s\t%s\n" "${REGISTERED_LABELS[$idx]}" "${REGISTERED_PIDS[$idx]}" >>"$path"
   done
+}
+
+load_process_manifest() {
+  local path="$1"
+  local label pid
+  clear_registered_processes
+  [[ -f "$path" ]] || return 0
+
+  while IFS=$'\t' read -r label pid || [[ -n "${label:-}" ]]; do
+    [[ -n "${label:-}" ]] || continue
+    [[ -n "${pid:-}" ]] || continue
+    register_process "$label" "$pid"
+  done <"$path"
 }
 
 start_background_process() {

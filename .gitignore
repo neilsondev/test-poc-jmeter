@@ -17,6 +17,7 @@ __pycache__/
 
 # Virtual environment
 .venv/
+.python-version
 
 # Local machine-specific config
 local/*.env
