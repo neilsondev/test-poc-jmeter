@@ -34,7 +34,7 @@ Este repositório pode ser usado de duas formas:
 - `scripts/tools/`: utilitários auxiliares, como reset de banco
 - `tools/metrics/`: coleta de métricas, consolidação de campanhas e simulação de p99
 - `resultados/<variante>`: saída non-GUI e relatórios por variante
-- `local/benchmark.env`: configuração local por máquina para a orquestração
+- `config/benchmark.env`: configuração local por máquina para a orquestração
 
 ## Modos de uso
 
@@ -75,7 +75,7 @@ Este modo hoje depende de scripts externos ao repositório e de um ambiente mais
 
 Observação:
 - a suíte agora também possui um `run_benchmark_cycle.sh` e um `benchmark_env.sh` dentro do próprio repositório
-- a configuração por máquina deve ficar em `local/benchmark.env`
+- a configuração por máquina deve ficar em `config/benchmark.env`
 - use `config/benchmark.env.example` como ponto de partida
 
 ## Pré-requisitos mínimos para executar os testes
@@ -105,7 +105,7 @@ Além dos itens acima:
 Antes de usar a automação completa:
 
 ```bash
-cp config/benchmark.env.example local/benchmark.env
+cp config/benchmark.env.example config/benchmark.env
 ```
 
 Depois ajuste os caminhos dos projetos e, se necessário, os comandos de start.
