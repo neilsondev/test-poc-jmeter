@@ -10,6 +10,7 @@ resultados/
 tmp/
 temp/
 *.tmp
+.target_*.jmx
 
 # Python cache
 __pycache__/
