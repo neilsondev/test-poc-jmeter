@@ -62,6 +62,7 @@ validate_spring_data() {
     cd "$JMETER_SUITE_DIR"
     SPRING_VALIDATION_BASE_URL="$SPRING_BASE_URL" \
     PYTHON_VALIDATION_BASE_URL="$PYTHON_BASE_URL" \
+    VALIDATION_TARGET="$TARGET" \
     "$python_bin" "$validator"
   )
 }
@@ -96,6 +97,10 @@ maybe_seed_data() {
 maybe_validate_data() {
   if is_true "${SKIP_VALIDATION:-false}"; then
     log_warn "Validacao de massa ignorada por configuracao."
+    return 0
+  fi
+  if ! is_true "$TARGET_ENABLES_SPRING" && ! is_true "$TARGET_ENABLES_PYTHON"; then
+    log_info "Validacao de massa ignorada: target sem stacks ativas."
     return 0
   fi
   if is_true "$RESEED_DATA" || is_true "${VALIDATE_EXISTING_DATA:-false}"; then

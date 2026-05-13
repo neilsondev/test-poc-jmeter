@@ -17,6 +17,7 @@ SPRING_CSV = ROOT / "data" / "simple_py" / "spring_read_ids.csv"
 PYTHON_CSV = ROOT / "data" / "simple_py" / "python_read_ids.csv"
 SPRING_BASE_URL = os.getenv("SPRING_VALIDATION_BASE_URL", "http://localhost:8080").rstrip("/")
 PYTHON_BASE_URL = os.getenv("PYTHON_VALIDATION_BASE_URL", "http://localhost:8000").rstrip("/")
+VALIDATION_TARGET = os.getenv("VALIDATION_TARGET", "both").strip().lower()
 
 
 def request_json(url: str) -> tuple[int, dict]:
@@ -75,8 +76,12 @@ def validate_python() -> None:
 
 
 def main() -> int:
-    validate_spring()
-    validate_python()
+    if VALIDATION_TARGET not in {"spring", "python", "both"}:
+        raise RuntimeError(f"VALIDATION_TARGET invalido: {VALIDATION_TARGET}")
+    if VALIDATION_TARGET in {"spring", "both"}:
+        validate_spring()
+    if VALIDATION_TARGET in {"python", "both"}:
+        validate_python()
     print("Validacao concluida.")
     return 0
 

@@ -277,11 +277,20 @@ Use os wrappers atuais da suíte:
 - `bash scripts/run_suite.sh simple_py`
 - `bash scripts/run_load.sh legacy`
 - `bash scripts/run_load.sh simple_py`
+- `bash scripts/run_suite.sh simple_py --target spring --scenarios smoke`
+- `bash scripts/run_suite.sh simple_py --target python --scenarios smoke`
+- `bash scripts/run_load.sh simple_py --target python`
 
 Para rodar apenas parte da suíte:
 
 - `bash scripts/run_suite.sh <variante> --scenarios smoke`
 - `bash scripts/run_suite.sh <variante> --scenarios baseline_leitura,baseline_escrita`
+
+Para rodar apenas uma stack por vez:
+
+- `bash scripts/run_suite.sh <variante> --target spring --scenarios smoke`
+- `bash scripts/run_suite.sh <variante> --target python --scenarios smoke`
+- `bash run_benchmark_cycle.sh --variant <variante> --run-flow load --target python`
 
 ## Como os resultados devem ser lidos
 

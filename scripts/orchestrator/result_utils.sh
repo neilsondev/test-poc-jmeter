@@ -5,7 +5,8 @@ build_run_id() {
   local run_flow="$2"
   local api_workers="$3"
   local reset_databases="$4"
-  local label="${5:-}"
+  local target="${5:-both}"
+  local label="${6:-}"
   local stamp suffix
   stamp="$(date +%Y-%m-%d_%H-%M-%S)"
   if is_true "$reset_databases"; then
@@ -13,11 +14,12 @@ build_run_id() {
   else
     suffix="noreset"
   fi
-  printf "%s_%s_%s_apiw%s_%s" \
+  printf "%s_%s_%s_%s_%s_%s" \
     "$stamp" \
     "$(sanitize_slug "$variant")" \
     "$(sanitize_slug "$run_flow")" \
-    "$api_workers" \
+    "$(sanitize_slug "$target")" \
+    "apiw${api_workers}" \
     "$suffix"
   if [[ -n "$label" ]]; then
     printf "_%s" "$(sanitize_slug "$label")"
@@ -39,6 +41,7 @@ write_metadata_json() {
   "run_id": "${RUN_ID}",
   "variant": "${VARIANT}",
   "run_flow": "${RUN_FLOW}",
+  "target": "${TARGET}",
   "label": "${LABEL}",
   "api_workers": ${API_WORKERS},
   "celery_workers": ${CELERY_WORKERS},
@@ -70,6 +73,7 @@ write_summary_txt() {
 run_id=${RUN_ID}
 variant=${VARIANT}
 run_flow=${RUN_FLOW}
+target=${TARGET}
 status=${RUN_STATUS}
 results_dir=${RUN_RESULTS_DIR}
 started_at=${STARTED_AT}

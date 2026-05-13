@@ -3,20 +3,24 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+source "$ROOT/scripts/tools/jmeter_target_utils.sh"
 
 VARIANT="${1:-legacy}"
 shift || true
 
 RESULTS_DIR_OVERRIDE=""
+TARGET="both"
 
 usage() {
   cat <<'EOF'
 Uso:
   bash scripts/run_load.sh legacy
   bash scripts/run_load.sh simple_py --results-dir /caminho/resultado
+  bash scripts/run_load.sh simple_py --target python
 
 Opcoes:
   --results-dir <dir>   Diretorio raiz da rodada para gravar carga e relatorio.
+  --target <stack>      spring, python ou both (padrao).
   --help                Exibe esta ajuda.
 EOF
 }
@@ -30,6 +34,15 @@ parse_args() {
           echo "Erro: --results-dir exige um diretorio." >&2
           exit 1
         fi
+        shift 2
+        ;;
+      --target)
+        TARGET="${2:-}"
+        if [[ -z "$TARGET" ]]; then
+          echo "Erro: --target exige spring, python ou both." >&2
+          exit 1
+        fi
+        validate_target "$TARGET" || exit 1
         shift 2
         ;;
       --help|-h)
@@ -73,11 +86,15 @@ if [[ -n "$RESULTS_DIR_OVERRIDE" ]]; then
   RESULTS_DIR="$RESULTS_DIR_OVERRIDE"
 fi
 
+validate_target "$TARGET" || exit 1
+
 mkdir -p "$RESULTS_DIR/$SCENARIO"
+
+FILTERED_PLAN="$(prepare_target_plan "$TARGET" "$PLAN_DIR/$PLAN_FILE" "$RESULTS_DIR/$SCENARIO")"
 
 jmeter -n \
   -f \
-  -t "$PLAN_DIR/$PLAN_FILE" \
+  -t "$FILTERED_PLAN" \
   -q "$CONFIG_DIR/ambientes.properties" \
   -q "$CONFIG_DIR/python.properties" \
   -q "$CONFIG_DIR/jmeter-user.properties" \
@@ -88,4 +105,4 @@ jmeter -n \
   -Jload.ramp.seconds="${LOAD_RAMP_SECONDS:-60}" \
   -Jload.delay.ms="${LOAD_DELAY_MS:-50}"
 
-python3 scripts/gerar_relatorio_variantes.py --variant "$VARIANT" --results-dir "$RESULTS_DIR"
+python3 scripts/gerar_relatorio_variantes.py --variant "$VARIANT" --results-dir "$RESULTS_DIR" --target "$TARGET"

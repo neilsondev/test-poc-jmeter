@@ -35,6 +35,10 @@ start_spring_service() {
 }
 
 wait_for_spring_ready() {
+  if ! is_true "$TARGET_ENABLES_SPRING"; then
+    log_info "Espera do Spring ignorada para target=$TARGET."
+    return 0
+  fi
   log_info "Aguardando Spring em $SPRING_READY_URL"
   if ! wait_for_http "$SPRING_READY_URL" "${SPRING_READY_TIMEOUT_SECONDS:-180}"; then
     die "Spring nao ficou pronto em tempo habil."

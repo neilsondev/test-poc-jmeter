@@ -253,17 +253,22 @@ def build_dashboard_insights(
     label_metrics: list[dict],
     scenario_metrics: list[dict],
 ) -> dict[str, object]:
+    available_stacks = sorted({item["stack"] for item in label_metrics if item["stack"] in {"Spring", "Python"}})
     best_python = [item for item in comparison_entries if item["delta_p95"] < 0]
     best_spring = [item for item in comparison_entries if item["delta_p95"] > 0]
     ties = [item for item in comparison_entries if abs(item["delta_p95"]) < 0.5]
-    missing_pairs = sorted(
-        item["name"]
-        for item in scenario_metrics
-        if item["name"] not in {entry["scenario"] for entry in comparison_entries}
-    )
+    if len(available_stacks) < 2:
+        missing_pairs: list[str] = []
+    else:
+        missing_pairs = sorted(
+            item["name"]
+            for item in scenario_metrics
+            if item["name"] not in {entry["scenario"] for entry in comparison_entries}
+        )
     payload_leaders = sorted(label_metrics, key=lambda item: item["metric"].avg_bytes, reverse=True)[:5]
     p95_leaders = sorted(label_metrics, key=lambda item: item["metric"].p95_ms, reverse=True)[:5]
     return {
+        "available_stacks": available_stacks,
         "best_python": sorted(best_python, key=lambda item: item["delta_p95"])[:3],
         "best_spring": sorted(best_spring, key=lambda item: item["delta_p95"], reverse=True)[:3],
         "ties": ties[:3],
@@ -290,17 +295,22 @@ def comparison_csv_rows(comparison_entries: list[dict]) -> list[list[str]]:
     return rows
 
 
-def build_hero(summary: dict[str, object]) -> str:
+def build_hero(summary: dict[str, object], target: str) -> str:
     worst = summary["worst_p95"]
     slowest = summary["slowest_duration"]
     volume = summary["highest_volume"]
     payload = summary["largest_payload"]
+    target_copy = {
+        "spring": "Rodada focada apenas na stack Spring.",
+        "python": "Rodada focada apenas na stack Python.",
+        "both": "Rodada com Spring e Python na mesma execução para comparação direta.",
+    }.get(target, "Rodada JMeter da suíte de paridade.")
     return f"""
     <header class="hero">
       <div>
         <p class="eyebrow">JMeter Paridade</p>
         <h1>Relatório visual da variante {html.escape(str(summary["variant"]))}</h1>
-        <p class="hero-copy">A leitura principal prioriza a comparação Spring x Python, destacando diferenças de p95 antes do detalhamento operacional.</p>
+        <p class="hero-copy">{html.escape(target_copy)}</p>
       </div>
       <div class="hero-grid">
         <article class="hero-stat">
@@ -401,8 +411,13 @@ def build_scenario_cards(scenario_metrics: list[dict]) -> str:
     return "".join(cards)
 
 
-def build_winner_panel(comparison_entries: list[dict]) -> str:
+def build_winner_panel(comparison_entries: list[dict], insights: dict[str, object]) -> str:
     if not comparison_entries:
+        available = insights["available_stacks"]
+        if available == ["Python"]:
+            return "<p class=\"empty-state\">Rodada single-stack Python: o comparativo Spring x Python fica vazio por definição.</p>"
+        if available == ["Spring"]:
+            return "<p class=\"empty-state\">Rodada single-stack Spring: o comparativo Spring x Python fica vazio por definição.</p>"
         return "<p class=\"empty-state\">Nenhum endpoint equivalente Spring/Python foi encontrado nesta variante.</p>"
     wins = Counter(item["faster"] for item in comparison_entries)
     ranked = sorted(comparison_entries, key=lambda item: item["abs_delta"], reverse=True)[:8]
@@ -467,6 +482,11 @@ def build_comparison_bars(comparison_entries: list[dict]) -> str:
 
 def build_insight_list(insights: dict[str, object]) -> str:
     items: list[str] = []
+    available = insights["available_stacks"]
+    if available == ["Spring"]:
+        items.append("A rodada executou apenas labels Spring, então os painéis comparativos ficam informativos e não indicam erro.")
+    elif available == ["Python"]:
+        items.append("A rodada executou apenas labels Python, então os painéis comparativos ficam informativos e não indicam erro.")
     for entry in insights["best_spring"]:
         items.append(
             f"Python ficou {entry['delta_p95']:.1f} ms mais lento em <strong>{html.escape(entry['scenario'])}</strong> / {html.escape(truncate(entry['endpoint']))}."
@@ -541,6 +561,7 @@ def build_label_table(label_rows: list[list[str]]) -> str:
 
 def build_dashboard(
     variant: str,
+    target: str,
     scenario_metrics: list[dict],
     label_metrics: list[dict],
     comparison_entries: list[dict],
@@ -666,7 +687,7 @@ def build_dashboard(
   </style>
 </head>
 <body>
-  {build_hero(summary)}
+  {build_hero(summary, target)}
   <main>
     {legend}
     {build_plain_language_section()}
@@ -677,7 +698,7 @@ def build_dashboard(
       <section class="panel">
         <h2>Quem ganhou onde</h2>
         <p>Ranking dos endpoints comparáveis com maior diferença absoluta de p95.</p>
-        {build_winner_panel(comparison_entries)}
+        {build_winner_panel(comparison_entries, insights)}
       </section>
       <section class="panel">
         <h2>Insights automáticos</h2>
@@ -725,6 +746,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--variant", required=True, choices=["legacy", "simple_py"])
     parser.add_argument("--results-dir")
+    parser.add_argument("--target", choices=["spring", "python", "both"], default="both")
     args = parser.parse_args()
 
     results_dir = Path(args.results_dir) if args.results_dir else ROOT / "resultados" / args.variant
@@ -803,7 +825,7 @@ def main() -> int:
         comparison_rows,
     )
     (report_dir / "dashboard.html").write_text(
-        build_dashboard(args.variant, scenario_metrics, label_metrics, comparison_entries, label_rows),
+        build_dashboard(args.variant, args.target, scenario_metrics, label_metrics, comparison_entries, label_rows),
         encoding="utf-8",
     )
 

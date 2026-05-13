@@ -259,6 +259,10 @@ start_python_worker() {
 }
 
 wait_for_python_ready() {
+  if ! is_true "$TARGET_ENABLES_PYTHON"; then
+    log_info "Espera da API Python ignorada para target=$TARGET."
+    return 0
+  fi
   local ready_url
   ready_url="$(resolve_python_ready_url)"
   log_info "Aguardando API Python em $ready_url"
@@ -268,6 +272,10 @@ wait_for_python_ready() {
 }
 
 maybe_start_redis() {
+  if ! is_true "$TARGET_ENABLES_PYTHON"; then
+    log_info "Redis nao e necessario para target=$TARGET."
+    return 0
+  fi
   if ! is_true "$REDIS_REQUIRED"; then
     log_info "Redis marcado como nao obrigatorio para esta rodada."
     return 0

@@ -3,12 +3,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+source "$ROOT/scripts/tools/jmeter_target_utils.sh"
 
 VARIANT="${1:-legacy}"
 shift || true
 
 RESULTS_DIR_OVERRIDE=""
 SCENARIOS_FILTER=""
+TARGET="both"
 
 usage() {
   cat <<'EOF'
@@ -16,10 +18,12 @@ Uso:
   bash scripts/run_suite.sh legacy
   bash scripts/run_suite.sh simple_py --results-dir /caminho/resultado
   bash scripts/run_suite.sh legacy --scenarios smoke,baseline_leitura
+  bash scripts/run_suite.sh simple_py --target spring --scenarios smoke
 
 Opcoes:
   --results-dir <dir>   Diretorio raiz da rodada para gravar cenarios e relatorio.
   --scenarios <lista>   Lista separada por virgula: smoke,baseline_leitura,baseline_escrita,full_regressao
+  --target <stack>      spring, python ou both (padrao).
   --help                Exibe esta ajuda.
 EOF
 }
@@ -41,6 +45,15 @@ parse_args() {
           echo "Erro: --scenarios exige uma lista." >&2
           exit 1
         fi
+        shift 2
+        ;;
+      --target)
+        TARGET="${2:-}"
+        if [[ -z "$TARGET" ]]; then
+          echo "Erro: --target exige spring, python ou both." >&2
+          exit 1
+        fi
+        validate_target "$TARGET" || exit 1
         shift 2
         ;;
       --help|-h)
@@ -80,6 +93,8 @@ if [[ -n "$RESULTS_DIR_OVERRIDE" ]]; then
   RESULTS_DIR="$RESULTS_DIR_OVERRIDE"
 fi
 
+validate_target "$TARGET" || exit 1
+
 mkdir -p \
   "$RESULTS_DIR/smoke" \
   "$RESULTS_DIR/baseline_leitura" \
@@ -89,10 +104,14 @@ mkdir -p \
 run_plan() {
   local scenario="$1"
   local plan_name="$2"
+  local plan_path filtered_plan
+
+  plan_path="$PLAN_DIR/$plan_name"
+  filtered_plan="$(prepare_target_plan "$TARGET" "$plan_path" "$RESULTS_DIR/$scenario")"
 
   jmeter -n \
     -f \
-    -t "$PLAN_DIR/$plan_name" \
+    -t "$filtered_plan" \
     -q "$CONFIG_DIR/ambientes.properties" \
     -q "$CONFIG_DIR/python.properties" \
     -q "$CONFIG_DIR/jmeter-user.properties" \
@@ -135,4 +154,4 @@ run_selected_scenarios() {
 
 run_selected_scenarios
 
-python3 scripts/gerar_relatorio_variantes.py --variant "$VARIANT" --results-dir "$RESULTS_DIR"
+python3 scripts/gerar_relatorio_variantes.py --variant "$VARIANT" --results-dir "$RESULTS_DIR" --target "$TARGET"

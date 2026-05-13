@@ -31,6 +31,12 @@ JMETER_THREADS="${JMETER_THREADS:-$DEFAULT_JMETER_THREADS}"
 JMETER_LOOPS="${JMETER_LOOPS:-$DEFAULT_JMETER_LOOPS}"
 JMETER_RAMP_SECONDS="${JMETER_RAMP_SECONDS:-$DEFAULT_JMETER_RAMP_SECONDS}"
 JMETER_DELAY_MS="${JMETER_DELAY_MS:-$DEFAULT_JMETER_DELAY_MS}"
+TARGET="${TARGET:-both}"
+TARGET_ENABLES_SPRING="true"
+TARGET_ENABLES_PYTHON="true"
+START_SPRING_EXPLICIT="false"
+START_PYTHON_EXPLICIT="false"
+START_WORKER_EXPLICIT="false"
 
 RUN_STATUS="error"
 RUN_ID=""
@@ -59,6 +65,7 @@ Uso:
 Opcoes:
   --variant legacy|simple_py
   --run-flow smoke|suite|load|suite+load
+  --target spring|python|both
   --api-workers N
   --celery-workers N
   --reset-databases true|false
@@ -114,6 +121,10 @@ parse_args() {
         RUN_FLOW="${2:-}"
         shift 2
         ;;
+      --target)
+        TARGET="${2:-}"
+        shift 2
+        ;;
       --api-workers)
         API_WORKERS="${2:-}"
         shift 2
@@ -140,14 +151,17 @@ parse_args() {
         ;;
       --start-spring)
         START_SPRING="${2:-}"
+        START_SPRING_EXPLICIT="true"
         shift 2
         ;;
       --start-python)
         START_PYTHON="${2:-}"
+        START_PYTHON_EXPLICIT="true"
         shift 2
         ;;
       --start-worker)
         START_WORKER="${2:-}"
+        START_WORKER_EXPLICIT="true"
         shift 2
         ;;
       --validate-existing-data)
@@ -194,6 +208,7 @@ parse_args() {
 }
 
 collect_missing_inputs() {
+  local start_spring_default start_python_default start_worker_default
   if is_true "$NON_INTERACTIVE"; then
     [[ -n "$VARIANT" ]] || die "--variant e obrigatorio com --non-interactive"
     [[ -n "$RUN_FLOW" ]] || die "--run-flow e obrigatorio com --non-interactive"
@@ -202,12 +217,34 @@ collect_missing_inputs() {
 
   VARIANT="$(ask_choice "Escolha a variante Python" "${VARIANT:-legacy}" "legacy" "simple_py")"
   RUN_FLOW="$(ask_choice "Escolha o fluxo JMeter" "${RUN_FLOW:-$DEFAULT_RUN_FLOW}" "smoke" "suite" "load" "suite+load")"
+  TARGET="$(ask_choice "Escolha o target do JMeter" "${TARGET:-both}" "both" "spring" "python")"
+  case "$TARGET" in
+    spring)
+      start_spring_default="true"
+      start_python_default="false"
+      start_worker_default="false"
+      ;;
+    python)
+      start_spring_default="false"
+      start_python_default="true"
+      start_worker_default="true"
+      ;;
+    both)
+      start_spring_default="true"
+      start_python_default="true"
+      start_worker_default="true"
+      ;;
+  esac
   API_WORKERS="$(ask_int "Quantidade de processos da API Python" "${API_WORKERS:-$DEFAULT_API_WORKERS}")"
   CELERY_WORKERS="$(ask_int "Concorrencia do Celery" "${CELERY_WORKERS:-$DEFAULT_CELERY_WORKERS}")"
   RESET_DATABASES="$(ask_bool "Deseja resetar bancos nesta rodada?" "$(normalize_bool "$RESET_DATABASES")")"
   RESEED_DATA="$(ask_bool "Deseja refazer a seed de massa?" "$(normalize_bool "$RESEED_DATA")")"
-  START_SPRING="$(ask_bool "Deseja subir o Spring nesta rodada?" "$(normalize_bool "$START_SPRING")")"
-  START_WORKER="$(ask_bool "Deseja subir o worker Celery?" "$(normalize_bool "$START_WORKER")")"
+  START_SPRING="$(ask_bool "Deseja subir o Spring nesta rodada?" "$start_spring_default")"
+  START_PYTHON="$(ask_bool "Deseja subir a API Python nesta rodada?" "$start_python_default")"
+  START_WORKER="$(ask_bool "Deseja subir o worker Celery?" "$start_worker_default")"
+  START_SPRING_EXPLICIT="true"
+  START_PYTHON_EXPLICIT="true"
+  START_WORKER_EXPLICIT="true"
   if [[ "$RUN_FLOW" == "load" || "$RUN_FLOW" == "suite+load" ]]; then
     JMETER_THREADS="$(ask_int "Quantidade de threads do JMeter" "${JMETER_THREADS:-$DEFAULT_JMETER_THREADS}")"
     JMETER_LOOPS="$(ask_int "Quantidade de loops do JMeter" "${JMETER_LOOPS:-$DEFAULT_JMETER_LOOPS}")"
@@ -248,6 +285,24 @@ validate_environment() {
       ;;
   esac
 
+  case "$TARGET" in
+    spring)
+      TARGET_ENABLES_SPRING="true"
+      TARGET_ENABLES_PYTHON="false"
+      ;;
+    python)
+      TARGET_ENABLES_SPRING="false"
+      TARGET_ENABLES_PYTHON="true"
+      ;;
+    both)
+      TARGET_ENABLES_SPRING="true"
+      TARGET_ENABLES_PYTHON="true"
+      ;;
+    *)
+      die "Target invalido: $TARGET"
+      ;;
+  esac
+
   [[ "$API_WORKERS" =~ ^[0-9]+$ ]] || die "API_WORKERS invalido: $API_WORKERS"
   [[ "$CELERY_WORKERS" =~ ^[0-9]+$ ]] || die "CELERY_WORKERS invalido: $CELERY_WORKERS"
   [[ "$JMETER_THREADS" =~ ^[0-9]+$ ]] || die "JMETER_THREADS invalido: $JMETER_THREADS"
@@ -257,6 +312,20 @@ validate_environment() {
 
   PYTHON_BASE_URL="$(resolve_python_base_url)"
   validate_metrics_runtime
+}
+
+apply_target_defaults() {
+  if ! is_true "$START_SPRING_EXPLICIT"; then
+    START_SPRING="$TARGET_ENABLES_SPRING"
+  fi
+
+  if ! is_true "$START_PYTHON_EXPLICIT"; then
+    START_PYTHON="$TARGET_ENABLES_PYTHON"
+  fi
+
+  if ! is_true "$START_WORKER_EXPLICIT"; then
+    START_WORKER="$TARGET_ENABLES_PYTHON"
+  fi
 }
 
 validate_metrics_runtime() {
@@ -278,16 +347,29 @@ validate_metrics_runtime() {
 build_run_context() {
   local python_db_key
   python_db_key="$(resolve_python_db_key)"
+  apply_target_defaults
 
   if [[ -z "$RESET_TARGETS" && "$(normalize_bool "$RESET_DATABASES")" == "true" ]]; then
-    RESET_TARGETS="spring,${python_db_key}"
+    if is_true "$TARGET_ENABLES_SPRING" && is_true "$TARGET_ENABLES_PYTHON"; then
+      RESET_TARGETS="spring,${python_db_key}"
+    elif is_true "$TARGET_ENABLES_SPRING"; then
+      RESET_TARGETS="spring"
+    else
+      RESET_TARGETS="${python_db_key}"
+    fi
   fi
 
   if [[ -z "$RESEED_TARGETS" && "$(normalize_bool "$RESEED_DATA")" == "true" ]]; then
-    RESEED_TARGETS="spring,python"
+    if is_true "$TARGET_ENABLES_SPRING" && is_true "$TARGET_ENABLES_PYTHON"; then
+      RESEED_TARGETS="spring,python"
+    elif is_true "$TARGET_ENABLES_SPRING"; then
+      RESEED_TARGETS="spring"
+    else
+      RESEED_TARGETS="python"
+    fi
   fi
 
-  RUN_ID="$(build_run_id "$VARIANT" "$RUN_FLOW" "$API_WORKERS" "$RESET_DATABASES" "$LABEL")"
+  RUN_ID="$(build_run_id "$VARIANT" "$RUN_FLOW" "$API_WORKERS" "$RESET_DATABASES" "$TARGET" "$LABEL")"
   prepare_run_directory "$JMETER_SUITE_DIR" "$VARIANT" "$RUN_ID"
   ORCHESTRATOR_LOG="$RUN_RESULTS_DIR/orchestrator.log"
   touch "$ORCHESTRATOR_LOG"
@@ -320,7 +402,7 @@ start_metrics_collection() {
       --scenario "$RUN_FLOW" \
       --targets-file "$PROCESS_TARGETS_PATH" \
       --results-dir "$METRICS_DIR" \
-      --command "bash run_benchmark_cycle.sh --variant $VARIANT --run-flow $RUN_FLOW"
+      --command "bash run_benchmark_cycle.sh --variant $VARIANT --run-flow $RUN_FLOW --target $TARGET"
   ) >>"$METRICS_LOG" 2>&1 &
   METRICS_MONITOR_PID=$!
 

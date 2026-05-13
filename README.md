@@ -58,8 +58,11 @@ Os entrypoints principais são:
 
 - `bash scripts/run_suite.sh legacy`
 - `bash scripts/run_suite.sh simple_py`
+- `bash scripts/run_suite.sh simple_py --target spring --scenarios smoke`
+- `bash scripts/run_suite.sh simple_py --target python --scenarios smoke`
 - `bash scripts/run_load.sh legacy`
 - `bash scripts/run_load.sh simple_py`
+- `bash scripts/run_load.sh simple_py --target python`
 
 ### 2. Modo orquestrado
 
@@ -190,6 +193,13 @@ Para executar cenários específicos:
 bash scripts/run_suite.sh simple_py --scenarios smoke,baseline_leitura
 ```
 
+Para rodar apenas uma stack por vez no mesmo plano:
+
+```bash
+bash scripts/run_suite.sh simple_py --target spring --scenarios smoke
+bash scripts/run_suite.sh simple_py --target python --scenarios smoke
+```
+
 ### Executar carga
 
 Use quando smoke e baselines estiverem estáveis:
@@ -197,6 +207,12 @@ Use quando smoke e baselines estiverem estáveis:
 ```bash
 bash scripts/run_load.sh legacy
 bash scripts/run_load.sh simple_py
+```
+
+Para focar a carga em apenas uma stack:
+
+```bash
+bash scripts/run_load.sh simple_py --target python
 ```
 
 Para ajustar a carga:
@@ -217,6 +233,12 @@ Exemplo com label:
 
 ```bash
 bash run_benchmark_cycle.sh --variant simple_py --run-flow suite+load --label suite-load-maio-2026
+```
+
+Exemplo focando apenas a stack Python:
+
+```bash
+bash run_benchmark_cycle.sh --variant simple_py --run-flow load --target python
 ```
 
 ## Planos disponíveis
@@ -260,6 +282,7 @@ Os relatórios gerados são:
 - `resultados/<variante>/relatorio/comparison_spring_python.csv`
 
 Cada dashboard explicita o objetivo de cada cenário antes de mostrar as métricas.
+Quando a rodada usa `--target spring` ou `--target python`, o comparativo Spring x Python fica vazio por definição e o dashboard mostra esse estado de forma informativa.
 
 ## Métricas e consolidação
 
